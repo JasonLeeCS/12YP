@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Performance Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #374151;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        }
+        
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .input-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        
+        .metric-card {
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .metric-card.primary { 
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #93c5fd;
+        }
+        .metric-card.success { 
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: #86efac;
+        }
+        .metric-card.warning { 
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: #fcd34d;
+        }
+        .metric-card.info { 
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-color: #7dd3fc;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .metric-subtitle {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .breakdown-label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .breakdown-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .breakdown-bar {
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        
+        .breakdown-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .breakdown-fill.contributions { background: linear-gradient(90deg, #10b981, #059669); }
+        .breakdown-fill.gains { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 1rem;
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .summary-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .summary-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        
+        .summary-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .toggle-section {
+            margin: 1.5rem 0;
+        }
+        
+        .toggle-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+        
+        .toggle-button:hover {
+            opacity: 0.9;
+        }
+        
+        .advanced-inputs {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Portfolio Performance Calculator</h1>
+            <p>Calculate your investment growth with compound interest and regular contributions</p>
+        </div>
+        
+        <div class="grid grid-4">
+            <!-- Basic Inputs -->
+            <div class="card">
+                <h2><span class="icon">💰</span>Investment Details</h2>
+                
+                <div class="input-group">
+                    <label>Initial Investment ($)</label>
+                    <input type="number" id="initialInvestment" value="10000" min="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>Monthly Contribution ($)</label>
+                    <input type="number" id="monthlyContribution" value="500" min="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>Investment Period (Years)</label>
+                    <input type="number" id="investmentPeriod" value="20" min="1" max="50">
+                </div>
+            </div>
+
+            <!-- Return Settings -->
+            <div class="card">
+                <h2><span class="icon">📈</span>Return Settings</h2>
+                
+                <div class="input-group">
+                    <label>Expected Annual Return (%)</label>
+                    <input type="number" step="0.1" id="expectedReturn" value="7.0" min="0" max="30">
+                </div>
+                
+                <div class="input-group">
+                    <label>Contribution Frequency</label>
+                    <select id="contributionFrequency">
+                        <option value="12">Monthly</option>
+                        <option value="26">Bi-weekly</option>
+                        <option value="52">Weekly</option>
+                        <option value="4">Quarterly</option>
+                        <option value="1">Annually</option>
+                    </select>
+                </div>
+                
+                <div class="toggle-section">
+                    <button class="toggle-button" onclick="toggleAdvanced()">⚙️ Advanced Options</button>
+                </div>
+                
+                <div id="advancedInputs" class="advanced-inputs" style="display: none;">
+                    <div class="input-group">
+                        <label>Annual Fee / Expense Ratio (%)</label>
+                        <input type="number" step="0.01" id="annualFees" value="0.5" min="0" max="5">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Tax Rate on Gains (%)</label>
+                        <input type="number" step="0.1" id="taxRate" value="15" min="0" max="50">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Inflation Rate (%)</label>
+                        <input type="number" step="0.1" id="inflationRate" value="2.5" min="0" max="10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="card">
+                <h2><span class="icon">🎯</span>Key Results</h2>
+                
+                <div class="metric-grid">
+                    <div class="metric-card primary">
+                        <div class="metric-label">Final Balance</div>
+                        <div class="metric-value" id="finalBalance">$0</div>
+                    </div>
+                    
+                    <div class="metric-card success">
+                        <div class="metric-label">Total Gains</div>
+                        <div class="metric-value" id="totalGains">$0</div>
+                    </div>
+                    
+                    <div class="metric-card warning">
+                        <div class="metric-label">Total Contributed</div>
+                        <div class="metric-value" id="totalContributed">$0</div>
+                    </div>
+                    
+                    <div class="metric-card info">
+                        <div class="metric-label">ROI</div>
+                        <div class="metric-value" id="roi">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="card">
+                <h2><span class="icon">📊</span>Portfolio Breakdown</h2>
+                
+                <div class="breakdown-item">
+                    <div>
+                        <div class="breakdown-label">Initial Investment</div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill contributions" id="initialBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="breakdown-value" id="initialPercent">0%</div>
+                </div>
+                
+                <div class="breakdown-item">
+                    <div>
+                        <div class="breakdown-label">Regular Contributions</div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill contributions" id="contributionsBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="breakdown-value" id="contributionsPercent">0%</div>
+                </div>
+                
+                <div class="breakdown-item">
+                    <div>
+                        <div class="breakdown-label">Investment Gains</div>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill gains" id="gainsBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="breakdown-value" id="gainsPercent">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="card">
+            <h2><span class="icon">📋</span>Detailed Analysis</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-title">Monthly Growth</div>
+                    <div class="summary-value" id="monthlyGrowth">$0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-title">Annual Growth Rate</div>
+                    <div class="summary-value" id="annualGrowthRate">0%</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-title">Real Return (After Inflation)</div>
+                    <div class="summary-value" id="realReturn">0%</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-title">After-Tax Balance</div>
+                    <div class="summary-value" id="afterTaxBalance">$0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-title">Purchasing Power</div>
+                    <div class="summary-value" id="purchasingPower">$0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-title">Years to Double</div>
+                    <div class="summary-value" id="yearsToDouble">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-2">
+            <div class="card">
+                <h2><span class="icon">📈</span>Portfolio Growth Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">🥧</span>Contributions vs. Gains</h2>
+                <div class="chart-container">
+                    <canvas id="compositionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let growthChart;
+        let compositionChart;
+        let advancedVisible = false;
+        
+        function toggleAdvanced() {
+            const advancedInputs = document.getElementById('advancedInputs');
+            advancedVisible = !advancedVisible;
+            advancedInputs.style.display = advancedVisible ? 'block' : 'none';
+        }
+        
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(value);
+        }
+        
+        function formatPercent(value) {
+            return `${value.toFixed(1)}%`;
+        }
+        
+        function calculatePortfolio() {
+            const initialInvestment = parseFloat(document.getElementById('initialInvestment').value) || 0;
+            const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value) || 0;
+            const investmentPeriod = parseFloat(document.getElementById('investmentPeriod').value) || 0;
+            const expectedReturn = parseFloat(document.getElementById('expectedReturn').value) || 0;
+            const contributionFrequency = parseFloat(document.getElementById('contributionFrequency').value) || 12;
+            const annualFees = parseFloat(document.getElementById('annualFees').value) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            const inflationRate = parseFloat(document.getElementById('inflationRate').value) || 0;
+            
+            // Adjust return for fees
+            const netReturn = expectedReturn - annualFees;
+            const monthlyReturn = netReturn / 100 / 12;
+            const contributionAmount = monthlyContribution * (12 / contributionFrequency);
+            const contributionPeriods = contributionFrequency * investmentPeriod;
+            
+            // Calculate compound growth
+            let balance = initialInvestment;
+            const projectionData = [];
+            const totalContributions = initialInvestment + (monthlyContribution * 12 * investmentPeriod);
+            
+            // Generate monthly projection data
+            for (let month = 0; month <= investmentPeriod * 12; month++) {
+                if (month === 0) {
+                    projectionData.push({
+                        month: month,
+                        year: 0,
+                        balance: balance,
+                        contributions: initialInvestment,
+                        gains: 0
+                    });
+                } else {
+                    // Add monthly return
+                    balance *= (1 + monthlyReturn);
+                    
+                    // Add contribution
+                    balance += monthlyContribution;
+                    
+                    const currentContributions = initialInvestment + (monthlyContribution * month);
+                    const gains = balance - currentContributions;
+                    
+                    projectionData.push({
+                        month: month,
+                        year: month / 12,
+                        balance: balance,
+                        contributions: currentContributions,
+                        gains: Math.max(0, gains)
+                    });
+                }
+            }
+            
+            const finalBalance = balance;
+            const totalGains = finalBalance - totalContributions;
+            const roi = totalContributions > 0 ? (totalGains / totalContributions) * 100 : 0;
+            
+            // Tax calculations
+            const taxableGains = Math.max(0, totalGains);
+            const taxes = taxableGains * (taxRate / 100);
+            const afterTaxBalance = finalBalance - taxes;
+            
+            // Inflation adjustment
+            const inflationFactor = Math.pow(1 + inflationRate / 100, investmentPeriod);
+            const purchasingPower = finalBalance / inflationFactor;
+            const realReturn = netReturn - inflationRate;
+            
+            // Years to double (Rule of 72)
+            const yearsToDouble = netReturn > 0 ? 72 / netReturn : 0;
+            
+            // Monthly growth
+            const monthlyGrowth = investmentPeriod > 0 ? (finalBalance - initialInvestment) / (investmentPeriod * 12) : 0;
+            
+            return {
+                finalBalance,
+                totalContributions,
+                totalGains,
+                roi,
+                afterTaxBalance,
+                purchasingPower,
+                realReturn,
+                yearsToDouble,
+                monthlyGrowth,
+                netReturn,
+                projectionData,
+                initialInvestment
+            };
+        }
+        
+        function updateDisplay() {
+            const results = calculatePortfolio();
+            
+            // Update key metrics
+            document.getElementById('finalBalance').textContent = formatCurrency(results.finalBalance);
+            document.getElementById('totalGains').textContent = formatCurrency(results.totalGains);
+            document.getElementById('totalContributed').textContent = formatCurrency(results.totalContributions);
+            document.getElementById('roi').textContent = formatPercent(results.roi);
+            
+            // Update breakdown percentages
+            const finalBalance = results.finalBalance;
+            const initialPercent = (results.initialInvestment / finalBalance) * 100;
+            const contributionsPercent = ((results.totalContributions - results.initialInvestment) / finalBalance) * 100;
+            const gainsPercent = (results.totalGains / finalBalance) * 100;
+            
+            document.getElementById('initialPercent').textContent = formatPercent(initialPercent);
+            document.getElementById('contributionsPercent').textContent = formatPercent(contributionsPercent);
+            document.getElementById('gainsPercent').textContent = formatPercent(gainsPercent);
+            
+            document.getElementById('initialBar').style.width = initialPercent + '%';
+            document.getElementById('contributionsBar').style.width = contributionsPercent + '%';
+            document.getElementById('gainsBar').style.width = gainsPercent + '%';
+            
+            // Update summary statistics
+            document.getElementById('monthlyGrowth').textContent = formatCurrency(results.monthlyGrowth);
+            document.getElementById('annualGrowthRate').textContent = formatPercent(results.netReturn);
+            document.getElementById('realReturn').textContent = formatPercent(results.realReturn);
+            document.getElementById('afterTaxBalance').textContent = formatCurrency(results.afterTaxBalance);
+            document.getElementById('purchasingPower').textContent = formatCurrency(results.purchasingPower);
+            document.getElementById('yearsToDouble').textContent = results.yearsToDouble.toFixed(1);
+            
+            updateCharts(results);
+        }
+        
+        function updateCharts(results) {
+            // Growth Chart
+            if (growthChart) {
+                growthChart.destroy();
+            }
+            
+            const growthCtx = document.getElementById('growthChart').getContext('2d');
+            const yearlyData = results.projectionData.filter((d, index) => index % 12 === 0);
+            
+            growthChart = new Chart(growthCtx, {
+                type: 'line',
+                data: {
+                    labels: yearlyData.map(d => `Year ${Math.floor(d.year)}`),
+                    datasets: [
+                        {
+                            label: 'Total Balance',
+                            data: yearlyData.map(d => d.balance),
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Total Contributions',
+                            data: yearlyData.map(d => d.contributions),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.raw);
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Composition Chart
+            if (compositionChart) {
+                compositionChart.destroy();
+            }
+            
+            const compositionCtx = document.getElementById('compositionChart').getContext('2d');
+            
+            compositionChart = new Chart(compositionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Initial Investment', 'Regular Contributions', 'Investment Gains'],
+                    datasets: [{
+                        data: [
+                            results.initialInvestment,
+                            results.totalContributions - results.initialInvestment,
+                            results.totalGains
+                        ],
+                        backgroundColor: [
+                            '#f59e0b',
+                            '#10b981',
+                            '#3b82f6'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.raw / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatCurrency(context.raw) + ' (' + percentage + '%)';
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = [
+                'initialInvestment', 'monthlyContribution', 'investmentPeriod', 
+                'expectedReturn', 'contributionFrequency', 'annualFees', 
+                'taxRate', 'inflationRate'
+            ];
+            
+            inputs.forEach(inputId => {
+                const element = document.getElementById(inputId);
+                if (element) {
+                    element.addEventListener('input', updateDisplay);
+                }
+            });
+            
+            // Initial calculation
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

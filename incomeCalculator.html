@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Income & Growth Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #374151;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 2rem;
+        }
+        
+        .grid {
+            display: grid;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
+            margin-bottom: 4px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .metric-card {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-card.blue { background-color: #dbeafe; }
+        .metric-card.green { background-color: #dcfce7; }
+        .metric-card.purple { background-color: #f3e8ff; }
+        .metric-card.orange { background-color: #fed7aa; }
+        .metric-card.gray { background-color: #f9fafb; }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .metric-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        
+        .blue .metric-value { color: #2563eb; }
+        .green .metric-value { color: #16a34a; }
+        .purple .metric-value { color: #9333ea; }
+        .orange .metric-value { color: #ea580c; }
+        .gray .metric-value { color: #374151; }
+        
+        .projection-item {
+            border-left: 4px solid #3b82f6;
+            padding-left: 12px;
+            margin-bottom: 1rem;
+        }
+        
+        .projection-year {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .projection-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #2563eb;
+        }
+        
+        .projection-income {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Portfolio Income & Growth Calculator</h1>
+        
+        <div class="grid grid-3">
+            <!-- Input Panel -->
+            <div class="card">
+                <h2>Portfolio Inputs</h2>
+                
+                <div class="input-group">
+                    <label>HYSA Amount ($)</label>
+                    <input type="number" id="hysaAmount" value="1000000">
+                </div>
+                
+                <div class="input-group">
+                    <label>HYSA Interest Rate (%)</label>
+                    <input type="number" step="0.01" id="hysaRate" value="4.35">
+                </div>
+                
+                <div class="input-group">
+                    <label>Brokerage Amount ($)</label>
+                    <input type="number" id="brokerageAmount" value="1000000">
+                </div>
+                
+                <div class="input-group">
+                    <label>Brokerage Return (%)</label>
+                    <input type="number" step="0.01" id="brokerageReturn" value="20">
+                </div>
+                
+                <div class="input-group">
+                    <label>Withdrawal Rate (%)</label>
+                    <input type="number" step="0.01" id="withdrawalRate" value="4">
+                </div>
+                
+                <div class="input-group">
+                    <label>Years to Project</label>
+                    <input type="number" id="years" value="20">
+                </div>
+            </div>
+
+            <!-- Summary Panel -->
+            <div class="card">
+                <h2>Key Metrics</h2>
+                
+                <div class="metric-card blue">
+                    <div class="metric-label">Total Portfolio Value</div>
+                    <div class="metric-value" id="totalPortfolio">$2,000,000</div>
+                </div>
+                
+                <div class="metric-card green">
+                    <div class="metric-label">Annual Withdrawal</div>
+                    <div class="metric-value" id="annualWithdrawal">$80,000</div>
+                </div>
+                
+                <div class="metric-card purple">
+                    <div class="metric-label">Blended Return Rate</div>
+                    <div class="metric-value" id="blendedReturn">12.18%</div>
+                </div>
+                
+                <div class="metric-card orange">
+                    <div class="metric-label">Net Growth Rate</div>
+                    <div class="metric-value" id="netGrowthRate">8.18%</div>
+                </div>
+                
+                <div class="metric-card gray">
+                    <div class="metric-label">HYSA Annual Income</div>
+                    <div class="metric-value" id="hysaIncome">$43,500</div>
+                </div>
+                
+                <div class="metric-card gray">
+                    <div class="metric-label">Brokerage Annual Income</div>
+                    <div class="metric-value" id="brokerageIncome">$200,000</div>
+                </div>
+            </div>
+
+            <!-- Future Value Preview -->
+            <div class="card">
+                <h2>Future Projections</h2>
+                <div id="projections">
+                    <!-- Projections will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-2">
+            <div class="card">
+                <h2>Portfolio Value Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="portfolioChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Annual Income Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="incomeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let portfolioChart;
+        let incomeChart;
+        
+        // Utility functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(value);
+        }
+        
+        function formatPercent(value) {
+            return `${value.toFixed(2)}%`;
+        }
+        
+        // Calculation functions
+        function calculateMetrics() {
+            const hysaAmount = parseFloat(document.getElementById('hysaAmount').value) || 0;
+            const hysaRate = parseFloat(document.getElementById('hysaRate').value) || 0;
+            const brokerageAmount = parseFloat(document.getElementById('brokerageAmount').value) || 0;
+            const brokerageReturn = parseFloat(document.getElementById('brokerageReturn').value) || 0;
+            const withdrawalRate = parseFloat(document.getElementById('withdrawalRate').value) || 0;
+            
+            const annualHysaIncome = hysaAmount * (hysaRate / 100);
+            const annualBrokerageIncome = brokerageAmount * (brokerageReturn / 100);
+            const totalAnnualReturns = annualHysaIncome + annualBrokerageIncome;
+            const totalPortfolio = hysaAmount + brokerageAmount;
+            const annualWithdrawal = totalPortfolio * (withdrawalRate / 100);
+            const blendedReturn = totalPortfolio > 0 ? (totalAnnualReturns / totalPortfolio) * 100 : 0;
+            const netGrowthRate = blendedReturn - withdrawalRate;
+            
+            return {
+                annualHysaIncome,
+                annualBrokerageIncome,
+                totalAnnualReturns,
+                totalPortfolio,
+                annualWithdrawal,
+                blendedReturn,
+                netGrowthRate,
+                withdrawalRate
+            };
+        }
+        
+        function generateProjectionData() {
+            const metrics = calculateMetrics();
+            const years = parseInt(document.getElementById('years').value) || 20;
+            const data = [];
+            let currentPortfolio = metrics.totalPortfolio;
+            
+            for (let year = 0; year <= years; year++) {
+                if (year === 0) {
+                    data.push({
+                        year,
+                        portfolioValue: currentPortfolio,
+                        annualIncome: metrics.annualWithdrawal,
+                        cumulativeWithdrawals: 0
+                    });
+                } else {
+                    const returns = currentPortfolio * (metrics.blendedReturn / 100);
+                    const withdrawal = currentPortfolio * (metrics.withdrawalRate / 100);
+                    currentPortfolio = currentPortfolio + returns - withdrawal;
+                    
+                    data.push({
+                        year,
+                        portfolioValue: currentPortfolio,
+                        annualIncome: withdrawal,
+                        cumulativeWithdrawals: data[year-1].cumulativeWithdrawals + withdrawal
+                    });
+                }
+            }
+            
+            return data;
+        }
+        
+        function updateMetricsDisplay() {
+            const metrics = calculateMetrics();
+            
+            document.getElementById('totalPortfolio').textContent = formatCurrency(metrics.totalPortfolio);
+            document.getElementById('annualWithdrawal').textContent = formatCurrency(metrics.annualWithdrawal);
+            document.getElementById('blendedReturn').textContent = formatPercent(metrics.blendedReturn);
+            document.getElementById('netGrowthRate').textContent = formatPercent(metrics.netGrowthRate);
+            document.getElementById('hysaIncome').textContent = formatCurrency(metrics.annualHysaIncome);
+            document.getElementById('brokerageIncome').textContent = formatCurrency(metrics.annualBrokerageIncome);
+        }
+        
+        function updateProjections() {
+            const projectionData = generateProjectionData();
+            const projectionsDiv = document.getElementById('projections');
+            const projectionYears = [1, 2, 3, 4, 5, 10, 15, 20];
+            
+            projectionsDiv.innerHTML = '';
+            
+            projectionYears.forEach(year => {
+                const data = projectionData[year];
+                if (data) {
+                    const div = document.createElement('div');
+                    div.className = 'projection-item';
+                    div.innerHTML = `
+                        <div class="projection-year">Year ${year}</div>
+                        <div class="projection-value">${formatCurrency(data.portfolioValue)}</div>
+                        <div class="projection-income">Annual Income: ${formatCurrency(data.annualIncome)}</div>
+                    `;
+                    projectionsDiv.appendChild(div);
+                }
+            });
+        }
+        
+        function updateCharts() {
+            const projectionData = generateProjectionData();
+            
+            // Portfolio Chart
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+            
+            const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+            portfolioChart = new Chart(portfolioCtx, {
+                type: 'line',
+                data: {
+                    labels: projectionData.map(d => `Year ${d.year}`),
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: projectionData.map(d => d.portfolioValue),
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 3,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Portfolio Value: ' + formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Income Chart
+            if (incomeChart) {
+                incomeChart.destroy();
+            }
+            
+            const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+            const incomeData = projectionData.filter((d, index) => index <= 20 && index % 2 === 0);
+            
+            incomeChart = new Chart(incomeCtx, {
+                type: 'bar',
+                data: {
+                    labels: incomeData.map(d => `Year ${d.year}`),
+                    datasets: [{
+                        label: 'Annual Income',
+                        data: incomeData.map(d => d.annualIncome),
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'K';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Annual Income: ' + formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateAll() {
+            updateMetricsDisplay();
+            updateProjections();
+            updateCharts();
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = ['hysaAmount', 'hysaRate', 'brokerageAmount', 'brokerageReturn', 'withdrawalRate', 'years'];
+            
+            inputs.forEach(inputId => {
+                document.getElementById(inputId).addEventListener('input', updateAll);
+            });
+            
+            // Initial calculation
+            updateAll();
+        });
+    </script>
+</body>
+</html>
