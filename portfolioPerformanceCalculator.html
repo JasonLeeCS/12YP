@@ -340,15 +340,14 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Contribution Frequency</label>
-                    <select id="contributionFrequency">
-                        <option value="12">Monthly</option>
-                        <option value="26">Bi-weekly</option>
-                        <option value="52">Weekly</option>
-                        <option value="4">Quarterly</option>
-                        <option value="1">Annually</option>
-                    </select>
+                <label>Contribution Frequency</label>
+                <select id="contributionFrequency">
+                    <option value="monthly">Monthly</option>
+                    <option value="biweekly">Bi-weekly</option>
+                    <option value="weekly">Weekly</option>
+                </select>
                 </div>
+
                 
                 <div class="toggle-section">
                     <button class="toggle-button" onclick="toggleAdvanced()">⚙️ Advanced Options</button>
@@ -508,92 +507,120 @@
             return `${value.toFixed(1)}%`;
         }
         
-        function calculatePortfolio() {
-            const initialInvestment = parseFloat(document.getElementById('initialInvestment').value) || 0;
-            const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value) || 0;
-            const investmentPeriod = parseFloat(document.getElementById('investmentPeriod').value) || 0;
-            const expectedReturn = parseFloat(document.getElementById('expectedReturn').value) || 0;
-            const contributionFrequency = parseFloat(document.getElementById('contributionFrequency').value) || 12;
-            const annualFees = parseFloat(document.getElementById('annualFees').value) || 0;
-            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-            const inflationRate = parseFloat(document.getElementById('inflationRate').value) || 0;
-            
-            // Adjust return for fees
-            const netReturn = expectedReturn - annualFees;
-            const monthlyReturn = netReturn / 100 / 12;
-            const contributionAmount = monthlyContribution * (12 / contributionFrequency);
-            const contributionPeriods = contributionFrequency * investmentPeriod;
-            
-            // Calculate compound growth
-            let balance = initialInvestment;
-            const projectionData = [];
-            const totalContributions = initialInvestment + (monthlyContribution * 12 * investmentPeriod);
-            
-            // Generate monthly projection data
-            for (let month = 0; month <= investmentPeriod * 12; month++) {
-                if (month === 0) {
-                    projectionData.push({
-                        month: month,
-                        year: 0,
-                        balance: balance,
-                        contributions: initialInvestment,
-                        gains: 0
-                    });
-                } else {
-                    // Add monthly return
-                    balance *= (1 + monthlyReturn);
-                    
-                    // Add contribution
-                    balance += monthlyContribution;
-                    
-                    const currentContributions = initialInvestment + (monthlyContribution * month);
-                    const gains = balance - currentContributions;
-                    
-                    projectionData.push({
-                        month: month,
-                        year: month / 12,
-                        balance: balance,
-                        contributions: currentContributions,
-                        gains: Math.max(0, gains)
-                    });
-                }
-            }
-            
-            const finalBalance = balance;
-            const totalGains = finalBalance - totalContributions;
-            const roi = totalContributions > 0 ? (totalGains / totalContributions) * 100 : 0;
-            
-            // Tax calculations
-            const taxableGains = Math.max(0, totalGains);
-            const taxes = taxableGains * (taxRate / 100);
-            const afterTaxBalance = finalBalance - taxes;
-            
-            // Inflation adjustment
-            const inflationFactor = Math.pow(1 + inflationRate / 100, investmentPeriod);
-            const purchasingPower = finalBalance / inflationFactor;
-            const realReturn = netReturn - inflationRate;
-            
-            // Years to double (Rule of 72)
-            const yearsToDouble = netReturn > 0 ? 72 / netReturn : 0;
-            
-            // Monthly growth
-            const monthlyGrowth = investmentPeriod > 0 ? (finalBalance - initialInvestment) / (investmentPeriod * 12) : 0;
-            
-            return {
-                finalBalance,
-                totalContributions,
-                totalGains,
-                roi,
-                afterTaxBalance,
-                purchasingPower,
-                realReturn,
-                yearsToDouble,
-                monthlyGrowth,
-                netReturn,
-                projectionData,
-                initialInvestment
-            };
-        }
+function calculatePortfolio() {
+  const initialInvestment   = parseFloat(document.getElementById('initialInvestment').value) || 0;
+  const periodContribution  = parseFloat(document.getElementById('monthlyContribution').value) || 0; // amount per selected frequency
+  const investmentPeriod    = parseFloat(document.getElementById('investmentPeriod').value) || 0;    // years
+  const expectedReturn      = parseFloat(document.getElementById('expectedReturn').value) || 0;      // % per year
+  const frequency           = (document.getElementById('contributionFrequency').value || 'monthly').toLowerCase(); // 'monthly' | 'biweekly' | 'weekly'
+  const annualFees          = parseFloat(document.getElementById('annualFees').value) || 0;          // % per year
+  const taxRate             = parseFloat(document.getElementById('taxRate').value) || 0;             // %
+  const inflationRate       = parseFloat(document.getElementById('inflationRate').value) || 0;       // %
+
+  // Net annual return after fees (as decimal)
+  const netAnnualRate = (expectedReturn - annualFees) / 100;
+
+  // Helper for monthly snapshot structure
+  const projectionData = [];
+  function pushSnapshot(monthIndex, balance, contribSoFar) {
+    projectionData[monthIndex] = {
+      month: monthIndex,
+      year: monthIndex / 12,
+      balance,
+      contributions: contribSoFar,
+      gains: Math.max(0, balance - contribSoFar)
+    };
+  }
+
+  let balance = initialInvestment;
+  let contributionsSoFar = initialInvestment;
+
+  if (frequency === 'monthly') {
+    const months = Math.round(investmentPeriod * 12);
+    const monthlyReturn = Math.pow(1 + netAnnualRate, 1 / 12) - 1;
+
+    for (let m = 0; m <= months; m++) {
+      if (m === 0) {
+        pushSnapshot(0, balance, contributionsSoFar);
+      } else {
+        balance *= (1 + monthlyReturn);     // growth
+        balance += periodContribution;      // deposit
+        contributionsSoFar += periodContribution;
+        pushSnapshot(m, balance, contributionsSoFar);
+      }
+    }
+
+  } else {
+    // Weekly/biweekly simulation with weekly compounding
+    const weeksPerYear = 52;
+    const totalWeeks = Math.round(investmentPeriod * weeksPerYear);
+    const weeklyReturn = Math.pow(1 + netAnnualRate, 1 / weeksPerYear) - 1;
+    const step = (frequency === 'biweekly') ? 2 : 1; // deposit every 1 or 2 weeks
+
+    pushSnapshot(0, balance, contributionsSoFar);
+
+    for (let w = 1; w <= totalWeeks; w++) {
+      balance *= (1 + weeklyReturn);        // growth each week
+      if (w % step === 0) {                 // deposit on cadence
+        balance += periodContribution;
+        contributionsSoFar += periodContribution;
+      }
+      const monthIndex = Math.floor((w * 12) / weeksPerYear);
+      pushSnapshot(monthIndex, balance, contributionsSoFar);
+    }
+  }
+
+  // Final stats
+  const finalBalance = balance;
+
+  // Count contributions by frequency
+  let periodicCount;
+  if (frequency === 'monthly') {
+    periodicCount = Math.round(investmentPeriod * 12);
+  } else if (frequency === 'biweekly') {
+    periodicCount = Math.floor(investmentPeriod * 26);
+  } else { // weekly
+    periodicCount = Math.floor(investmentPeriod * 52);
+  }
+
+  const totalContributions = initialInvestment + periodContribution * periodicCount;
+  const totalGains = finalBalance - totalContributions;
+  const roi = totalContributions > 0 ? (totalGains / totalContributions) * 100 : 0;
+
+  // taxes on gains
+  const taxableGains = Math.max(0, totalGains);
+  const taxes = taxableGains * (taxRate / 100);
+  const afterTaxBalance = finalBalance - taxes;
+
+  // inflation adjustment
+  const inflationFactor = Math.pow(1 + inflationRate / 100, investmentPeriod);
+  const purchasingPower = finalBalance / inflationFactor;
+  const realReturn = (expectedReturn - annualFees) - inflationRate;
+
+  // rule of 72 (approx)
+  const yearsToDouble = (expectedReturn - annualFees) > 0 ? 72 / (expectedReturn - annualFees) : 0;
+
+  // avg monthly growth (simple)
+  const monthsTotal = Math.max(1, Math.round(investmentPeriod * 12));
+  const monthlyGrowth = (finalBalance - initialInvestment) / monthsTotal;
+
+  return {
+    finalBalance,
+    totalContributions,
+    totalGains,
+    roi,
+    afterTaxBalance,
+    purchasingPower,
+    realReturn,
+    yearsToDouble,
+    monthlyGrowth,
+    netReturn: (expectedReturn - annualFees),
+    projectionData,
+    initialInvestment
+  };
+}
+
+
         
         function updateDisplay() {
             const results = calculatePortfolio();
