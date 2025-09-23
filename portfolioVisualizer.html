@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schwab Portfolio Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.6/chart.umd.min.js" integrity="sha512-6q2gbCOAi0VwAJotbiXhUyXfWIvRFFY0pM0hjW1i0O+2S6UpHVZG6Aqp7z6mHkNWTCMqhurx7sdc3+9YGcQn0w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <style>
         :root {
             color-scheme: light;
@@ -571,6 +572,7 @@
             }
         }
 
+
         function parseCsvText(text) {
             if (typeof text !== "string") return [];
 
@@ -648,6 +650,37 @@
             } finally {
                 setLoading(false);
             }
+
+        function handleFile(file) {
+            if (!file) return;
+            clearError();
+            setLoading(true);
+            selectedFileLabel.textContent = file.name;
+
+            Papa.parse(file, {
+                skipEmptyLines: "greedy",
+                complete: (results) => {
+                    try {
+                        const holdings = transformRows(results.data);
+                        if (!holdings.length) {
+                            throw new Error("We couldn't find any positions in that file. Double-check you're using the Schwab Individual Positions export.");
+                        }
+                        const metrics = computeMetrics(holdings);
+                        renderDashboard(metrics);
+                        analysisSection.classList.remove("hidden");
+                        analysisSection.scrollIntoView({ behavior: "smooth", block: "start" });
+                    } catch (error) {
+                        showError(error.message);
+                        analysisSection.classList.add("hidden");
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+                error: (error) => {
+                    setLoading(false);
+                    showError(error.message || "Something went wrong while reading the CSV file.");
+                },
+            });
         }
 
         function transformRows(rows) {
