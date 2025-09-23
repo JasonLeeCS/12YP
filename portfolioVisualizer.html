@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schwab Portfolio Visualizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.6/chart.umd.min.js" integrity="sha512-6q2gbCOAi0VwAJotbiXhUyXfWIvRFFY0pM0hjW1i0O+2S6UpHVZG6Aqp7z6mHkNWTCMqhurx7sdc3+9YGcQn0w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-8dJvKP6q5pIvylI2zdh0dX8GZFODdgNpTi27C/7fyqCkCmZJLdnOjFkMrDXLI4YAlnXrhIRbkIuAeGHGZnwV3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" integrity="sha512-SIMGYRUjwY8+gKg7nn9EItdD8LCADSDfJNutF9TPrvEo86sQmFMh6MyralfIyhADlajSxqc7G0gs7+MwWF/ogQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             color-scheme: light;
@@ -572,36 +571,83 @@
             }
         }
 
-        function handleFile(file) {
+        function parseCsvText(text) {
+            if (typeof text !== "string") return [];
+
+            const sanitized = text.replace(/^\uFEFF/, "");
+            const rows = [];
+            let current = "";
+            let row = [];
+            let inQuotes = false;
+
+            for (let i = 0; i < sanitized.length; i++) {
+                const char = sanitized[i];
+
+                if (char === "\"") {
+                    if (inQuotes && sanitized[i + 1] === "\"") {
+                        current += "\"";
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === "," && !inQuotes) {
+                    row.push(current);
+                    current = "";
+                } else if ((char === "\n" || char === "\r") && !inQuotes) {
+                    if (char === "\r" && sanitized[i + 1] === "\n") {
+                        i++;
+                    }
+                    row.push(current);
+                    rows.push(row);
+                    row = [];
+                    current = "";
+                } else {
+                    current += char;
+                }
+            }
+
+            if (current.length > 0 || row.length) {
+                row.push(current);
+                rows.push(row);
+            }
+
+            return rows
+                .map((cells) => cells.map((cell) => cell.trim()))
+                .filter((cells) => cells.some((cell) => cell.length));
+        }
+
+        async function handleFile(file) {
             if (!file) return;
             clearError();
-            setLoading(true);
             selectedFileLabel.textContent = file.name;
+            analysisSection.classList.add("hidden");
+            setLoading(true);
 
-            Papa.parse(file, {
-                skipEmptyLines: "greedy",
-                complete: (results) => {
-                    try {
-                        const holdings = transformRows(results.data);
-                        if (!holdings.length) {
-                            throw new Error("We couldn't find any positions in that file. Double-check you're using the Schwab Individual Positions export.");
-                        }
-                        const metrics = computeMetrics(holdings);
-                        renderDashboard(metrics);
-                        analysisSection.classList.remove("hidden");
-                        analysisSection.scrollIntoView({ behavior: "smooth", block: "start" });
-                    } catch (error) {
-                        showError(error.message);
-                        analysisSection.classList.add("hidden");
-                    } finally {
-                        setLoading(false);
-                    }
-                },
-                error: (error) => {
-                    setLoading(false);
-                    showError(error.message || "Something went wrong while reading the CSV file.");
-                },
-            });
+            try {
+                const text = await file.text();
+                const rows = parseCsvText(text);
+                if (!rows.length) {
+                    throw new Error("We couldn't read any rows from that file. Double-check you're using the Schwab Individual Positions export.");
+                }
+
+                const holdings = transformRows(rows);
+                if (!holdings.length) {
+                    throw new Error("We couldn't find any positions in that file. Double-check you're using the Schwab Individual Positions export.");
+                }
+
+                const metrics = computeMetrics(holdings);
+                renderDashboard(metrics);
+                analysisSection.classList.remove("hidden");
+                analysisSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch (error) {
+                if (typeof console !== "undefined" && typeof console.error === "function") {
+                    console.error(error);
+                }
+                showError(error.message || "Something went wrong while reading the CSV file.");
+                analysisSection.classList.add("hidden");
+            } finally {
+                setLoading(false);
+            }
         }
 
         function transformRows(rows) {
@@ -1103,3 +1149,4 @@
     </script>
 </body>
 </html>
+<!DOCTYPE html>
