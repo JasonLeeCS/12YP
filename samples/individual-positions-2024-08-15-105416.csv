@@ -1,0 +1,12 @@
+Account Name,Account Type,Symbol,Description,Asset Class,Quantity,Last Price,Current Value,Cost Basis,Gain/Loss $,Gain/Loss %,Percent of Account
+Primary Brokerage,Individual,AAPL,Apple Inc.,Technology,120,190.15,$22,818.00,$15,000.00,$7,818.00,52.12%,14.36%
+Primary Brokerage,Individual,MSFT,Microsoft Corp.,Technology,80,330.25,$26,420.00,$21,000.00,$5,420.00,25.81%,16.62%
+Primary Brokerage,Individual,VOO,Vanguard S&P 500 ETF,Index Fund,60,420.10,$25,206.00,$24,000.00,$1,206.00,5.03%,15.86%
+Primary Brokerage,Individual,GOOGL,Alphabet Inc. Class A,Technology,90,132.50,$11,925.00,$9,000.00,$2,925.00,32.50%,7.50%
+Primary Brokerage,Individual,NVDA,NVIDIA Corporation,Technology,30,470.00,$14,100.00,$8,000.00,$6,100.00,76.25%,8.87%
+Primary Brokerage,Individual,JPM,JP Morgan Chase & Co.,Financials,70,150.30,$10,521.00,$11,000.00,-$479.00,-4.35%,6.62%
+Primary Brokerage,Individual,XOM,Exxon Mobil Corp.,Energy,90,110.70,$9,963.00,$9,500.00,$463.00,4.87%,6.27%
+Primary Brokerage,Individual,COST,Costco Wholesale Corp.,Consumer,25,560.40,$14,010.00,$12,500.00,$1,510.00,12.08%,8.81%
+Primary Brokerage,Individual,UNH,UnitedHealth Group Inc.,Healthcare,20,520.10,$10,402.00,$10,000.00,$402.00,4.02%,6.54%
+Primary Brokerage,Individual,AMZN,Amazon.com Inc.,Consumer,45,135.80,$6,111.00,$7,000.00,-$889.00,-12.70%,3.84%
+Primary Brokerage,Individual,BND,Vanguard Total Bond Market ETF,Fixed Income,100,75.20,$7,520.00,$7,800.00,-$280.00,-3.59%,4.73%
