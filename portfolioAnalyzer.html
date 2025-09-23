@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Portfolio Analyzer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>GPT-5 Portfolio Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" integrity="sha512-Jo6NvKcJsteVEh9UpAJZciV06P88GJEqn3Ejj6+UeJ8V+RaH//RUW2KIiMzFxLpy0X58F3RDeo63HgVUsVTN4A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-8dJvKP6q5pIvylI2zdh0dX8GZFODdgNpTi27C/7fyqCkCmZJLdnOjFkMrDXLI4YAlnXrhIRbkIuAeGHGZnwV3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         * {
             margin: 0;
@@ -15,80 +15,172 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
+            color: #1f2933;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 60px rgba(79, 70, 229, 0.25);
+            backdrop-filter: blur(12px);
         }
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 32px;
         }
 
         .header h1 {
             font-size: 3rem;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #4338ca, #ec4899);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .header p {
-            color: #666;
-            font-size: 1.2rem;
+            color: #4b5563;
+            font-size: 1.1rem;
+        }
+
+        .api-key-section {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.08);
+        }
+
+        .api-key-section h2 {
+            font-size: 1.4rem;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .api-key-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .api-key-actions input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #f9fafb;
+        }
+
+        button.primary-button {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button.primary-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+        }
+
+        button.secondary-button {
+            background: transparent;
+            border: 1px solid #6366f1;
+            color: #4338ca;
+            padding: 11px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        button.secondary-button:hover {
+            background: rgba(99, 102, 241, 0.12);
+            color: #312e81;
+        }
+
+        .api-key-hint {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .api-key-status {
+            font-size: 0.95rem;
+            margin-top: 6px;
+        }
+
+        .api-key-status.success {
+            color: #059669;
+        }
+
+        .api-key-status.muted {
+            color: #6b7280;
+        }
+
+        .api-key-status.error {
+            color: #dc2626;
         }
 
         .upload-section {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 15px;
-            padding: 40px;
+            background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+            border-radius: 18px;
+            padding: 48px 32px;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
             color: white;
+            box-shadow: 0 18px 45px rgba(236, 72, 153, 0.35);
         }
 
         .upload-area {
-            border: 3px dashed rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            padding: 40px;
+            border: 3px dashed rgba(255, 255, 255, 0.75);
+            border-radius: 14px;
+            padding: 48px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
         }
 
-        .upload-area:hover {
-            border-color: white;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
+        .upload-area:hover,
         .upload-area.dragover {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
+            border-color: white;
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
+            font-size: 3.2rem;
+            margin-bottom: 18px;
         }
 
         .upload-text {
-            font-size: 1.3rem;
-            margin-bottom: 10px;
+            font-size: 1.35rem;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
 
         .upload-subtext {
-            opacity: 0.8;
+            opacity: 0.85;
             font-size: 1rem;
+        }
+
+        .upload-subtext a {
+            color: #fef3c7;
+            text-decoration: underline;
+            font-weight: 600;
         }
 
         input[type="file"] {
@@ -98,22 +190,26 @@
         .loading {
             display: none;
             text-align: center;
-            padding: 40px;
+            padding: 40px 0;
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
+            width: 56px;
+            height: 56px;
+            border: 5px solid #e5e7eb;
+            border-top: 5px solid #6366f1;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 18px;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .results {
@@ -122,24 +218,24 @@
 
         .dashboard {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
 
         .metric-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            padding: 25px;
-            border-radius: 15px;
+            padding: 26px;
+            border-radius: 16px;
             text-align: center;
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.25);
         }
 
         .metric-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
         .metric-label {
@@ -148,64 +244,81 @@
         }
 
         .section {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 26px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
         }
 
         .section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.8rem;
-            border-bottom: 3px solid #667eea;
+            margin-bottom: 18px;
+            font-size: 1.6rem;
+            color: #1f2937;
+            border-bottom: 3px solid rgba(99, 102, 241, 0.15);
             padding-bottom: 10px;
         }
 
         .chart-container {
             position: relative;
-            height: 400px;
-            margin: 20px 0;
+            height: 380px;
         }
 
         .category-breakdown {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
         }
 
         .category-item {
-            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 5px 15px rgba(132, 250, 176, 0.3);
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
         .category-name {
             font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 6px;
         }
 
         .category-value {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #4338ca;
+        }
+
+        .category-meta {
+            font-size: 0.95rem;
+            color: #4b5563;
+            margin-top: 4px;
+        }
+
+        .category-gain {
+            font-size: 0.95rem;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .category-gain.positive {
+            color: #059669;
+        }
+
+        .category-gain.negative {
+            color: #dc2626;
         }
 
         .insights {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin: 20px 0;
         }
 
         .insights h3 {
-            margin-bottom: 15px;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+            margin-bottom: 12px;
         }
 
         .insights ul {
@@ -214,118 +327,166 @@
         }
 
         .insights li {
-            background: rgba(255, 255, 255, 0.2);
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid white;
-        }
-
-        .top-holdings {
-            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.18);
+            margin-bottom: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border-left: 4px solid rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
         }
 
         .holdings-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin-top: 14px;
         }
 
         .holdings-table th,
         .holdings-table td {
-            padding: 12px;
+            padding: 14px 12px;
+            border-bottom: 1px solid #e5e7eb;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            font-size: 0.98rem;
         }
 
         .holdings-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 600;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-weight: 700;
         }
 
         .holdings-table tr:hover {
-            background: #f5f5f5;
+            background: #f8fafc;
         }
 
         .positive {
-            color: #4CAF50;
-            font-weight: bold;
+            color: #059669;
+            font-weight: 600;
         }
 
         .negative {
-            color: #f44336;
-            font-weight: bold;
+            color: #dc2626;
+            font-weight: 600;
         }
 
         .ai-analysis {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin: 20px 0;
+            padding: 32px;
+            border-radius: 18px;
+            margin-top: 24px;
+            box-shadow: 0 20px 45px rgba(79, 70, 229, 0.35);
         }
 
-        .analyzing {
+        .ai-analysis.error-state {
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        }
+
+        .ai-analysis h3 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+
+        .ai-analysis .analyzing {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 16px;
         }
 
-        .pulse {
-            animation: pulse 2s infinite;
+        .ai-analysis pre {
+            background: rgba(255, 255, 255, 0.18);
+            padding: 18px;
+            border-radius: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+            max-height: 420px;
+            overflow-y: auto;
+            font-size: 1.05rem;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .ai-footnote {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.85);
         }
 
         .error {
-            background: #f44336;
+            background: #dc2626;
             color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 18px;
             display: none;
         }
 
-        @media (max-width: 768px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
+        @media (max-width: 900px) {
             .container {
                 padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2.3rem;
+            }
+
+            .upload-section {
+                padding: 32px 20px;
+            }
+
+            .upload-area {
+                padding: 32px;
+            }
+
+            .ai-analysis {
+                padding: 24px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .api-key-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .api-key-actions input,
+            button.primary-button,
+            button.secondary-button {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📊 AI Portfolio Analyzer</h1>
-            <p>Upload your Excel portfolio and get intelligent insights powered by AI</p>
-        </div>
+        <header class="header">
+            <h1>🤖 GPT-5 Portfolio Analyzer</h1>
+            <p>Upload your brokerage CSV export to visualize allocations and receive AI-powered insights.</p>
+        </header>
 
-        <div class="upload-section">
+        <section class="api-key-section">
+            <h2>OpenAI API Key</h2>
+            <div class="api-key-actions">
+                <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" />
+                <button class="primary-button" id="saveApiKey">Save key</button>
+                <button class="secondary-button" id="clearApiKey">Clear</button>
+            </div>
+            <p class="api-key-hint">Your API key never leaves your browser and is stored locally so you can request GPT-5 analyses securely.</p>
+            <div class="api-key-status muted" id="apiKeyStatus">Enter your OpenAI API key to enable GPT-5 portfolio guidance.</div>
+        </section>
+
+        <section class="upload-section">
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📁</div>
-                <div class="upload-text">Drop your Excel file here or click to browse</div>
-                <div class="upload-subtext">Supports .xlsx, .xls files</div>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                <div class="upload-text">Drop your CSV here or click to browse</div>
+                <div class="upload-subtext">Supports Schwab <code>.csv</code> exports – <a href="samples/individual-positions-2024-08-15-105416.csv" download>download sample data</a></div>
+                <input type="file" id="fileInput" accept=".csv" />
             </div>
-        </div>
+        </section>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Processing your portfolio data...</p>
+            <p>Crunching the numbers in your portfolio...</p>
         </div>
 
         <div class="error" id="error"></div>
@@ -338,15 +499,15 @@
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="totalGainLoss">$0</div>
-                    <div class="metric-label">Total Gain/Loss</div>
+                    <div class="metric-label">Unrealized Gain / Loss</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="totalGainPercent">0%</div>
-                    <div class="metric-label">Total Gain %</div>
+                    <div class="metric-label">Gain / Loss %</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="numHoldings">0</div>
-                    <div class="metric-label">Holdings Count</div>
+                    <div class="metric-label">Number of Holdings</div>
                 </div>
             </div>
 
@@ -362,292 +523,503 @@
                 <div class="category-breakdown" id="categoryBreakdown"></div>
             </div>
 
+            <div class="section insights" id="insightsSection">
+                <h3>Portfolio Highlights</h3>
+                <ul id="insightsList"></ul>
+            </div>
+
             <div class="section">
                 <h2>Top Holdings</h2>
-                <div class="top-holdings">
-                    <table class="holdings-table" id="holdingsTable">
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>Description</th>
-                                <th>Market Value</th>
-                                <th>Gain/Loss $</th>
-                                <th>Gain/Loss %</th>
-                                <th>% of Portfolio</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <table class="holdings-table" id="holdingsTable">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Market Value</th>
+                            <th>Gain / Loss $</th>
+                            <th>Gain / Loss %</th>
+                            <th>% of Portfolio</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
 
             <div class="ai-analysis" id="aiAnalysis">
                 <div class="analyzing">
-                    <div class="spinner pulse"></div>
-                    <h3>AI is analyzing your portfolio...</h3>
+                    <div class="spinner"></div>
+                    <h3>Waiting for portfolio data...</h3>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let portfolioData = [];
-        let categoryData = {};
-        let chart = null;
-
-        // File upload handling
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
-        const error = document.getElementById('error');
+        const errorBanner = document.getElementById('error');
+        const aiAnalysisSection = document.getElementById('aiAnalysis');
+
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyButton = document.getElementById('saveApiKey');
+        const clearApiKeyButton = document.getElementById('clearApiKey');
+        const apiKeyStatus = document.getElementById('apiKeyStatus');
+
+        let openAiApiKey = '';
+        let portfolioData = [];
+        let categoryData = {};
+        let allocationChart = null;
+
+        initApiKeyFromStorage();
 
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
         uploadArea.addEventListener('drop', handleDrop);
         fileInput.addEventListener('change', handleFileSelect);
 
-        function handleDragOver(e) {
-            e.preventDefault();
+        saveApiKeyButton.addEventListener('click', saveApiKey);
+        clearApiKeyButton.addEventListener('click', clearApiKey);
+        apiKeyInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                saveApiKey();
+            }
+        });
+
+        function initApiKeyFromStorage() {
+            try {
+                const storedKey = window.localStorage.getItem('gpt5_portfolio_api_key');
+                if (storedKey) {
+                    openAiApiKey = storedKey;
+                    apiKeyInput.value = storedKey;
+                    updateApiKeyStatus('API key saved locally. GPT-5 insights are ready.', 'success');
+                }
+            } catch (storageError) {
+                console.warn('Unable to read API key from storage:', storageError);
+                updateApiKeyStatus('Local storage is unavailable. The key will only persist for this session.', 'error');
+            }
+        }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            openAiApiKey = key;
+
+            if (!key) {
+                try {
+                    window.localStorage.removeItem('gpt5_portfolio_api_key');
+                } catch (_) {
+                    // ignore
+                }
+                updateApiKeyStatus('API key cleared. Enter a key to enable GPT-5 portfolio guidance.', 'muted');
+                return;
+            }
+
+            try {
+                window.localStorage.setItem('gpt5_portfolio_api_key', key);
+                updateApiKeyStatus('API key saved locally. GPT-5 insights are ready.', 'success');
+            } catch (storageError) {
+                console.warn('Unable to store API key:', storageError);
+                updateApiKeyStatus('Saved for this session only. Browser storage is unavailable.', 'error');
+            }
+        }
+
+        function clearApiKey() {
+            apiKeyInput.value = '';
+            openAiApiKey = '';
+            try {
+                window.localStorage.removeItem('gpt5_portfolio_api_key');
+            } catch (_) {
+                // ignore
+            }
+            updateApiKeyStatus('API key cleared. Enter a key to enable GPT-5 portfolio guidance.', 'muted');
+        }
+
+        function updateApiKeyStatus(message, statusClass = 'muted') {
+            apiKeyStatus.textContent = message;
+            apiKeyStatus.className = `api-key-status ${statusClass}`;
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
             uploadArea.classList.add('dragover');
         }
 
-        function handleDrop(e) {
-            e.preventDefault();
+        function handleDrop(event) {
+            event.preventDefault();
             uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
+            const files = event.dataTransfer?.files;
+            if (files && files.length > 0) {
                 processFile(files[0]);
             }
         }
 
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
+        function handleFileSelect(event) {
+            const file = event.target.files?.[0];
             if (file) {
                 processFile(file);
             }
         }
 
         function processFile(file) {
-            if (!file.name.match(/\.(xlsx|xls)$/)) {
-                showError('Please select a valid Excel file (.xlsx or .xls)');
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showError('Please upload a CSV file exported from your brokerage account.');
                 return;
             }
 
             loading.style.display = 'block';
             results.style.display = 'none';
-            error.style.display = 'none';
+            errorBanner.style.display = 'none';
+            aiAnalysisSection.innerHTML = `
+                <div class="analyzing">
+                    <div class="spinner"></div>
+                    <h3>GPT-5 is ready to review your portfolio once parsing completes...</h3>
+                </div>
+            `;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    portfolioData = processPortfolioData(jsonData);
-                    if (portfolioData.length === 0) {
-                        throw new Error('No valid portfolio data found in the file');
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (parseResult) => {
+                    try {
+                        if (parseResult.errors && parseResult.errors.length) {
+                            console.warn('CSV parse warnings:', parseResult.errors);
+                        }
+                        const rawRows = parseResult.data || [];
+                        portfolioData = processPortfolioData(rawRows);
+                        if (!portfolioData.length) {
+                            throw new Error('No valid portfolio rows found in the CSV file.');
+                        }
+                        analyzePortfolio();
+                    } catch (processingError) {
+                        console.error('Error processing CSV file:', processingError);
+                        showError('Error processing CSV: ' + processingError.message);
+                        loading.style.display = 'none';
+                    } finally {
+                        fileInput.value = '';
                     }
-                    
-                    analyzePortfolio();
-                } catch (err) {
-                    console.error('Error processing file:', err);
-                    showError('Error processing file: ' + err.message);
+                },
+                error: (err) => {
+                    console.error('CSV parsing error:', err);
+                    showError('Unable to parse CSV file: ' + err.message);
                     loading.style.display = 'none';
+                    fileInput.value = '';
                 }
-            };
-            reader.readAsArrayBuffer(file);
+            });
         }
 
-        function processPortfolioData(rawData) {
-            return rawData.map(row => {
-                // Handle different possible column name variations
-                const getColumnValue = (row, possibleNames) => {
-                    for (let name of possibleNames) {
-                        if (row[name] !== undefined) return row[name];
+        function processPortfolioData(rows) {
+            return rows.map(row => {
+                const getColumnValue = (record, possibleNames) => {
+                    for (const name of possibleNames) {
+                        if (record[name] !== undefined && record[name] !== null && record[name] !== '') {
+                            return record[name];
+                        }
                     }
                     return null;
                 };
 
-                const symbol = getColumnValue(row, ['Symbol', 'SYMBOL', 'Ticker']);
-                const description = getColumnValue(row, ['Description', 'DESCRIPTION', 'Name', 'Company']);
-                const marketValue = parseFloat(getColumnValue(row, ['Mkt Val', 'Market Value', 'MKT VAL', 'Value']) || 0);
-                const gainLoss = parseFloat(getColumnValue(row, ['Gain $', 'Gain/Loss $', 'GAIN $', 'P&L']) || 0);
-                const gainPercent = parseFloat(getColumnValue(row, ['Gain %', 'Gain/Loss %', 'GAIN %', 'P&L %']) || 0);
-                const quantity = parseFloat(getColumnValue(row, ['Qty', 'Quantity', 'QTY', 'Shares']) || 0);
-                const price = parseFloat(getColumnValue(row, ['Price', 'PRICE', 'Current Price']) || 0);
+                const symbol = getColumnValue(row, ['Symbol', 'SYMBOL', 'Ticker', 'Security Symbol']);
+                const description = getColumnValue(row, ['Description', 'DESCRIPTION', 'Security Description', 'Name', 'Company']);
+                const marketValue = parseCurrency(getColumnValue(row, ['Current Value', 'Market Value', 'MarketValue', 'Value', 'Amount', 'Current Market Value', 'Mkt Val']));
+                const quantity = parseNumber(getColumnValue(row, ['Quantity', 'Qty', 'Share Quantity', 'Shares', 'QTY']));
+                const price = parseCurrency(getColumnValue(row, ['Last Price', 'Price', 'Price ($)', 'Current Price']));
+                const gainLossRaw = getColumnValue(row, ['Gain/Loss $', 'Gain $', 'Unrealized Gain/Loss $', 'Gain Loss $', 'Gain']);
+                const gainPercentRaw = getColumnValue(row, ['Gain/Loss %', 'Gain %', 'Unrealized Gain/Loss %', 'Gain Loss %']);
+                const costBasisRaw = getColumnValue(row, ['Cost Basis', 'Cost Basis $', 'Total Cost', 'Cost']);
+                const categoryRaw = getColumnValue(row, ['Asset Class', 'Asset Category', 'Category', 'Sector', 'Industry']);
 
-                if (!symbol || marketValue === 0) return null;
+                if (!symbol || !marketValue || !isFinite(marketValue) || marketValue <= 0) {
+                    return null;
+                }
+
+                const costBasis = determineCostBasis(marketValue, gainLossRaw, costBasisRaw, quantity, price);
+                const gainLoss = determineGainLoss(marketValue, gainLossRaw, costBasis);
+                const gainPercent = determineGainPercent(gainPercentRaw, gainLoss, costBasis);
 
                 return {
-                    symbol,
-                    description: description || symbol,
+                    symbol: symbol.toString().trim().toUpperCase(),
+                    description: description ? description.toString().trim() : symbol.toString().trim().toUpperCase(),
                     marketValue,
                     gainLoss,
                     gainPercent,
-                    quantity,
-                    price,
-                    category: categorizeStock(symbol, description)
+                    quantity: quantity || null,
+                    price: price || null,
+                    costBasis,
+                    category: normalizeCategory(categoryRaw, symbol, description)
                 };
-            }).filter(item => item !== null);
+            }).filter(Boolean);
+        }
+
+        function parseNumber(value) {
+            if (value === null || value === undefined || value === '') return 0;
+            if (typeof value === 'number') return value;
+            const stringValue = value.toString().trim();
+            if (!stringValue) return 0;
+            const isNegative = stringValue.includes('(') && stringValue.includes(')');
+            const cleaned = stringValue.replace(/[^0-9.\-]/g, '');
+            const parsed = parseFloat(cleaned);
+            if (Number.isNaN(parsed)) return 0;
+            return isNegative ? -parsed : parsed;
+        }
+
+        function parseCurrency(value) {
+            return parseNumber(value);
+        }
+
+        function parsePercent(value) {
+            return parseNumber(value);
+        }
+
+        function determineCostBasis(marketValue, gainLossRaw, costBasisRaw, quantity, price) {
+            if (costBasisRaw !== null && costBasisRaw !== undefined && costBasisRaw !== '') {
+                const parsedCost = parseCurrency(costBasisRaw);
+                if (!Number.isNaN(parsedCost)) {
+                    return parsedCost;
+                }
+            }
+
+            if (gainLossRaw !== null && gainLossRaw !== undefined && gainLossRaw !== '') {
+                const parsedGainLoss = parseCurrency(gainLossRaw);
+                if (!Number.isNaN(parsedGainLoss)) {
+                    return marketValue - parsedGainLoss;
+                }
+            }
+
+            if (quantity && price) {
+                return quantity * price;
+            }
+
+            return marketValue;
+        }
+
+        function determineGainLoss(marketValue, gainLossRaw, costBasis) {
+            if (gainLossRaw !== null && gainLossRaw !== undefined && gainLossRaw !== '') {
+                const parsedGainLoss = parseCurrency(gainLossRaw);
+                if (!Number.isNaN(parsedGainLoss)) {
+                    return parsedGainLoss;
+                }
+            }
+            if (costBasis || costBasis === 0) {
+                return marketValue - costBasis;
+            }
+            return 0;
+        }
+
+        function determineGainPercent(gainPercentRaw, gainLoss, costBasis) {
+            if (gainPercentRaw !== null && gainPercentRaw !== undefined && gainPercentRaw !== '') {
+                const parsedPercent = parsePercent(gainPercentRaw);
+                if (!Number.isNaN(parsedPercent)) {
+                    return parsedPercent;
+                }
+            }
+            if (costBasis || costBasis === 0) {
+                return costBasis !== 0 ? (gainLoss / costBasis) * 100 : 0;
+            }
+            return 0;
+        }
+
+        function normalizeCategory(rawCategory, symbol, description) {
+            if (rawCategory) {
+                const normalized = rawCategory.toString().trim();
+                if (normalized) {
+                    const lowered = normalized.toLowerCase();
+                    const categoryMap = {
+                        'equity': 'Equity',
+                        'stock': 'Equity',
+                        'domestic stock': 'Equity',
+                        'international stock': 'International Equity',
+                        'technology': 'Technology',
+                        'tech': 'Technology',
+                        'health': 'Healthcare',
+                        'healthcare': 'Healthcare',
+                        'financial': 'Financials',
+                        'finance': 'Financials',
+                        'energy': 'Energy',
+                        'consumer': 'Consumer',
+                        'industrial': 'Industrials',
+                        'materials': 'Materials',
+                        'communication': 'Communication Services',
+                        'index': 'Index Funds & ETFs',
+                        'etf': 'Index Funds & ETFs',
+                        'fund': 'Index Funds & ETFs',
+                        'bond': 'Fixed Income',
+                        'fixed income': 'Fixed Income',
+                        'cash': 'Cash & Equivalents',
+                        'money market': 'Cash & Equivalents',
+                        'reit': 'Real Estate',
+                        'real estate': 'Real Estate'
+                    };
+                    for (const [key, value] of Object.entries(categoryMap)) {
+                        if (lowered.includes(key)) {
+                            return value;
+                        }
+                    }
+                    return capitalizeWords(normalized);
+                }
+            }
+            return categorizeStock(symbol, description);
+        }
+
+        function capitalizeWords(text) {
+            return text.replace(/\b\w+/g, word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
         }
 
         function categorizeStock(symbol, description) {
-            const desc = (description || '').toLowerCase();
-            const sym = (symbol || '').toLowerCase();
+            const desc = (description || '').toString().toLowerCase();
+            const sym = (symbol || '').toString().toLowerCase();
 
-            // ETF patterns
-            if (sym.includes('etf') || desc.includes('etf') || desc.includes('fund') || 
-                sym.match(/^(spy|qqq|iwm|vti|voo|dia|xle|xlf|xlk|xly|xlp|xli|xlv|xlb|xlu|xlre)/)) {
-                return 'ETFs';
+            if (desc.includes('treasury') || desc.includes('bond') || desc.includes('municipal') || desc.includes('fixed income') || sym.includes('bnd') || sym.includes('agg')) {
+                return 'Fixed Income';
             }
 
-            // Tech companies
-            if (sym.match(/^(aapl|msft|googl|goog|amzn|meta|tsla|nvda|nflx|adbe|crm|orcl|intc|amd|avgo|qcom|txn|now|intu|mu|amat|lrcx|klac|mrvl|on|swks|tmus|vz|t|dis|zm|uber|lyft|sq|pypl|v|ma|shop|snow|pltr|rblx|coin|hood|rivn|lcid)/) ||
-                desc.includes('software') || desc.includes('technology') || desc.includes('semiconductor') ||
-                desc.includes('internet') || desc.includes('cloud') || desc.includes('cyber')) {
+            if (desc.includes('cash') || desc.includes('savings') || desc.includes('money market') || sym === 'cash') {
+                return 'Cash & Equivalents';
+            }
+
+            if (sym.includes('etf') || desc.includes('etf') || desc.includes('fund') || desc.includes('index') || sym.match(/^(spy|qqq|iwm|vti|voo|dia|xl[afbklruv]|vt|vea|vwo)/)) {
+                return 'Index Funds & ETFs';
+            }
+
+            if (sym.match(/^(aapl|msft|goog|googl|amzn|meta|fb|tsla|nvda|adbe|crm|orcl|intc|amd|avgo|qcom|txn|shop|snow|pltr|now|square|pypl|sap|asml)/) || desc.includes('software') || desc.includes('technology') || desc.includes('semiconductor') || desc.includes('cloud')) {
                 return 'Technology';
             }
 
-            // Healthcare
-            if (desc.includes('pharma') || desc.includes('biotech') || desc.includes('healthcare') ||
-                desc.includes('medical') || desc.includes('drug') || desc.includes('hospital') ||
-                sym.match(/^(jnj|pfizer|mrk|abbv|lly|unh|jpm|bmy|gild|amgn|regn|vrtx|biib|celg)/)) {
+            if (desc.includes('health') || desc.includes('pharma') || desc.includes('biotech') || desc.includes('medical') || sym.match(/^(jnj|unh|pfe|mrk|abbv|lly|tmo|bmy|gild|amgn|hum|cvs)/)) {
                 return 'Healthcare';
             }
 
-            // Financial services
-            if (desc.includes('bank') || desc.includes('financial') || desc.includes('insurance') ||
-                desc.includes('credit') || desc.includes('investment') ||
-                sym.match(/^(jpm|bac|wfc|c|gs|ms|axa|aig|met|pru|schw|bk|usb|pnc)/)) {
-                return 'Financial';
+            if (desc.includes('bank') || desc.includes('financial') || desc.includes('insurance') || desc.includes('brokerage') || sym.match(/^(jpm|bac|wfc|c|gs|ms|schw|usb|pnc|met|pru|spgi)/)) {
+                return 'Financials';
             }
 
-            // Energy
-            if (desc.includes('oil') || desc.includes('gas') || desc.includes('energy') ||
-                desc.includes('petroleum') || desc.includes('renewable') ||
-                sym.match(/^(xom|cvx|cop|slb|oxy|mro|dvn|eog|pxd|kmi)/)) {
+            if (desc.includes('oil') || desc.includes('gas') || desc.includes('energy') || desc.includes('petroleum') || desc.includes('renewable') || sym.match(/^(xom|cvx|cop|slb|oxy|dvn|eog|psx)/)) {
                 return 'Energy';
             }
 
-            // Consumer goods
-            if (desc.includes('retail') || desc.includes('consumer') || desc.includes('food') ||
-                desc.includes('beverage') || desc.includes('restaurant') ||
-                sym.match(/^(ko|pep|wmt|hd|low|mcd|sbux|nke|pg|jnj|cost)/)) {
+            if (desc.includes('utility') || sym.match(/^(nee|duke|so|d|aep|xlu)/)) {
+                return 'Utilities';
+            }
+
+            if (desc.includes('retail') || desc.includes('consumer') || desc.includes('restaurant') || desc.includes('beverage') || sym.match(/^(wmt|hd|low|mcd|sbux|nke|cost|pg|ko|pep|tgt|tsn)/)) {
                 return 'Consumer';
             }
 
-            // Real Estate
-            if (desc.includes('reit') || desc.includes('real estate') || desc.includes('property') ||
-                sym.match(/^(amt|pld|eqix|wel|dlr|o|reyn|avb|eqr|ess)/)) {
-                return 'Real Estate';
+            if (desc.includes('industrial') || desc.includes('aerospace') || desc.includes('defense') || desc.includes('manufacturing') || desc.includes('transportation') || sym.match(/^(ba|cat|de|hon|lmt|rtx|gd|mmm|ge|ups|fdx)/)) {
+                return 'Industrials';
             }
 
-            // Industrial
-            if (desc.includes('industrial') || desc.includes('aerospace') || desc.includes('defense') ||
-                desc.includes('manufacturing') || desc.includes('transportation') ||
-                sym.match(/^(ba|cat|ge|mmm|hon|ups|fdx|lmt|rtx|de)/)) {
-                return 'Industrial';
+            if (desc.includes('communication') || desc.includes('media') || desc.includes('telecom') || sym.match(/^(t|vz|tmus|dis|cmcsa|chtr|nflx|goog|meta)/)) {
+                return 'Communication Services';
+            }
+
+            if (desc.includes('material') || desc.includes('chemical') || sym.match(/^(lyb|dd|apd|fcx|clf)/)) {
+                return 'Materials';
+            }
+
+            if (desc.includes('real estate') || desc.includes('reit') || sym.match(/^(o|pld|amt|eqix|spg|psa|avb|ess|bxy)/)) {
+                return 'Real Estate';
             }
 
             return 'Other';
         }
 
         function analyzePortfolio() {
-            // Calculate summary metrics
             const totalValue = portfolioData.reduce((sum, stock) => sum + stock.marketValue, 0);
             const totalGainLoss = portfolioData.reduce((sum, stock) => sum + stock.gainLoss, 0);
-            const totalGainPercent = totalValue > 0 ? (totalGainLoss / (totalValue - totalGainLoss)) * 100 : 0;
+            const totalCost = portfolioData.reduce((sum, stock) => sum + (Number.isFinite(stock.costBasis) ? stock.costBasis : stock.marketValue - stock.gainLoss), 0);
+            const totalGainPercent = totalCost !== 0 ? (totalGainLoss / totalCost) * 100 : 0;
 
-            // Group by category
             categoryData = portfolioData.reduce((acc, stock) => {
-                if (!acc[stock.category]) {
-                    acc[stock.category] = { value: 0, count: 0, gainLoss: 0 };
+                const key = stock.category || 'Other';
+                if (!acc[key]) {
+                    acc[key] = { value: 0, count: 0, gainLoss: 0, cost: 0 };
                 }
-                acc[stock.category].value += stock.marketValue;
-                acc[stock.category].count += 1;
-                acc[stock.category].gainLoss += stock.gainLoss;
+                acc[key].value += stock.marketValue;
+                acc[key].count += 1;
+                acc[key].gainLoss += stock.gainLoss;
+                acc[key].cost += Number.isFinite(stock.costBasis) ? stock.costBasis : (stock.marketValue - stock.gainLoss);
                 return acc;
             }, {});
 
-            // Update dashboard
             document.getElementById('totalValue').textContent = formatCurrency(totalValue);
             document.getElementById('totalGainLoss').textContent = formatCurrency(totalGainLoss);
             document.getElementById('totalGainPercent').textContent = formatPercent(totalGainPercent);
-            document.getElementById('numHoldings').textContent = portfolioData.length;
+            document.getElementById('numHoldings').textContent = portfolioData.length.toString();
 
-            // Apply color coding to gain/loss
             const gainLossElement = document.getElementById('totalGainLoss');
             const gainPercentElement = document.getElementById('totalGainPercent');
             if (totalGainLoss >= 0) {
-                gainLossElement.style.color = '#4CAF50';
-                gainPercentElement.style.color = '#4CAF50';
+                gainLossElement.classList.add('positive');
+                gainLossElement.classList.remove('negative');
+                gainPercentElement.classList.add('positive');
+                gainPercentElement.classList.remove('negative');
             } else {
-                gainLossElement.style.color = '#f44336';
-                gainPercentElement.style.color = '#f44336';
+                gainLossElement.classList.add('negative');
+                gainLossElement.classList.remove('positive');
+                gainPercentElement.classList.add('negative');
+                gainPercentElement.classList.remove('positive');
             }
 
-            // Create category breakdown
-            createCategoryBreakdown();
-            
-            // Create chart
+            createCategoryBreakdown(totalValue);
             createAllocationChart();
-            
-            // Create holdings table
-            createHoldingsTable();
-            
-            // Show results
+            createHoldingsTable(totalValue);
+            updateInsights(totalValue, totalGainLoss, totalGainPercent);
+
             loading.style.display = 'none';
             results.style.display = 'block';
-            
-            // Start AI analysis
-            analyzeWithAI();
+
+            analyzeWithAI(totalValue, totalGainLoss, totalGainPercent, totalCost);
         }
 
-        function createCategoryBreakdown() {
+        function createCategoryBreakdown(totalValue) {
             const container = document.getElementById('categoryBreakdown');
             container.innerHTML = '';
 
-            Object.entries(categoryData).forEach(([category, data]) => {
-                const totalValue = portfolioData.reduce((sum, stock) => sum + stock.marketValue, 0);
-                const percentage = ((data.value / totalValue) * 100).toFixed(1);
-                
-                const div = document.createElement('div');
-                div.className = 'category-item';
-                div.innerHTML = `
+            const entries = Object.entries(categoryData).sort((a, b) => b[1].value - a[1].value);
+            entries.forEach(([category, data]) => {
+                const percentage = totalValue > 0 ? (data.value / totalValue) * 100 : 0;
+                const gainPercent = data.cost !== 0 ? (data.gainLoss / data.cost) * 100 : 0;
+                const gainClass = data.gainLoss >= 0 ? 'positive' : 'negative';
+
+                const card = document.createElement('div');
+                card.className = 'category-item';
+                card.innerHTML = `
                     <div class="category-name">${category}</div>
                     <div class="category-value">${formatCurrency(data.value)}</div>
-                    <div style="font-size: 0.9rem; margin-top: 5px;">${percentage}% (${data.count} holdings)</div>
+                    <div class="category-meta">${percentage.toFixed(1)}% of portfolio · ${data.count} holdings</div>
+                    <div class="category-gain ${gainClass}">${formatCurrency(data.gainLoss)} (${formatPercent(gainPercent)})</div>
                 `;
-                container.appendChild(div);
+                container.appendChild(card);
             });
         }
 
         function createAllocationChart() {
             const ctx = document.getElementById('allocationChart').getContext('2d');
-            
-            if (chart) {
-                chart.destroy();
+            if (allocationChart) {
+                allocationChart.destroy();
             }
 
             const categories = Object.keys(categoryData);
             const values = categories.map(cat => categoryData[cat].value);
-            const colors = [
-                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+            const palette = [
+                '#6366f1', '#f59e0b', '#10b981', '#f97316', '#3b82f6',
+                '#ef4444', '#8b5cf6', '#14b8a6', '#facc15', '#ec4899',
+                '#94a3b8', '#0ea5e9', '#fb7185', '#22c55e', '#fbbf24'
             ];
 
-            chart = new Chart(ctx, {
+            allocationChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: categories,
                     datasets: [{
                         data: values,
-                        backgroundColor: colors,
+                        backgroundColor: categories.map((_, index) => palette[index % palette.length]),
                         borderWidth: 2,
-                        borderColor: '#fff'
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {
@@ -658,7 +1030,7 @@
                             position: 'bottom',
                             labels: {
                                 usePointStyle: true,
-                                padding: 20
+                                padding: 18
                             }
                         }
                     }
@@ -666,136 +1038,245 @@
             });
         }
 
-        function createHoldingsTable() {
+        function createHoldingsTable(totalValue) {
             const tbody = document.querySelector('#holdingsTable tbody');
             tbody.innerHTML = '';
 
-            // Sort by market value (descending)
             const sortedHoldings = [...portfolioData].sort((a, b) => b.marketValue - a.marketValue);
-            const totalValue = portfolioData.reduce((sum, stock) => sum + stock.marketValue, 0);
-
             sortedHoldings.slice(0, 10).forEach(stock => {
                 const row = document.createElement('tr');
-                const portfolioPercent = ((stock.marketValue / totalValue) * 100).toFixed(2);
-                
+                const weight = totalValue > 0 ? (stock.marketValue / totalValue) * 100 : 0;
                 row.innerHTML = `
                     <td><strong>${stock.symbol}</strong></td>
                     <td>${stock.description}</td>
+                    <td>${stock.category}</td>
                     <td>${formatCurrency(stock.marketValue)}</td>
                     <td class="${stock.gainLoss >= 0 ? 'positive' : 'negative'}">${formatCurrency(stock.gainLoss)}</td>
                     <td class="${stock.gainPercent >= 0 ? 'positive' : 'negative'}">${formatPercent(stock.gainPercent)}</td>
-                    <td>${portfolioPercent}%</td>
+                    <td>${weight.toFixed(2)}%</td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
-        async function analyzeWithAI() {
-            try {
-                const totalValue = portfolioData.reduce((sum, stock) => sum + stock.marketValue, 0);
-                const totalGainLoss = portfolioData.reduce((sum, stock) => sum + stock.gainLoss, 0);
-                const totalGainPercent = totalValue > 0 ? (totalGainLoss / (totalValue - totalGainLoss)) * 100 : 0;
+        function updateInsights(totalValue, totalGainLoss, totalGainPercent) {
+            const insightsList = document.getElementById('insightsList');
+            insightsList.innerHTML = '';
 
-                // Prepare portfolio summary for AI
-                const portfolioSummary = {
-                    totalValue: totalValue,
-                    totalGainLoss: totalGainLoss,
-                    totalGainPercent: totalGainPercent,
-                    numHoldings: portfolioData.length,
-                    categories: categoryData,
-                    topHoldings: portfolioData
-                        .sort((a, b) => b.marketValue - a.marketValue)
-                        .slice(0, 10)
-                        .map(stock => ({
-                            symbol: stock.symbol,
-                            category: stock.category,
-                            marketValue: stock.marketValue,
-                            portfolioPercent: (stock.marketValue / totalValue * 100).toFixed(2),
-                            gainPercent: stock.gainPercent
-                        }))
+            if (!portfolioData.length) {
+                return;
+            }
+
+            const sortedHoldings = [...portfolioData].sort((a, b) => b.marketValue - a.marketValue);
+            const topHolding = sortedHoldings[0];
+            const topThreeWeight = sortedHoldings.slice(0, 3).reduce((sum, stock) => sum + stock.marketValue, 0);
+            const topThreePercent = totalValue > 0 ? (topThreeWeight / totalValue) * 100 : 0;
+
+            const categories = Object.entries(categoryData).sort((a, b) => b[1].value - a[1].value);
+            const topCategory = categories[0];
+            const topCategoryPercent = topCategory ? (topCategory[1].value / totalValue) * 100 : 0;
+
+            const losingHoldings = sortedHoldings.filter(stock => stock.gainLoss < 0).slice(0, 3);
+            const positiveCount = portfolioData.filter(stock => stock.gainLoss >= 0).length;
+
+            const insights = [];
+            if (topHolding) {
+                const weight = totalValue > 0 ? (topHolding.marketValue / totalValue) * 100 : 0;
+                insights.push(`Largest position: ${topHolding.symbol} (${topHolding.description}) accounts for ${weight.toFixed(1)}% of the portfolio.`);
+            }
+
+            if (topThreePercent) {
+                insights.push(`Top 3 holdings represent ${topThreePercent.toFixed(1)}% of the portfolio value.`);
+            }
+
+            if (topCategory) {
+                insights.push(`${topCategory[0]} exposure is ${topCategoryPercent.toFixed(1)}% across ${topCategory[1].count} holdings.`);
+            }
+
+            const direction = totalGainLoss >= 0 ? 'up' : 'down';
+            insights.push(`Portfolio is ${direction} ${formatCurrency(Math.abs(totalGainLoss))} (${formatPercent(Math.abs(totalGainPercent))}) versus cost basis.`);
+
+            if (losingHoldings.length) {
+                const underperformers = losingHoldings.map(stock => `${stock.symbol} (${formatPercent(stock.gainPercent)})`).join(', ');
+                insights.push(`Watch underperformers: ${underperformers}.`);
+            }
+
+            insights.push(`${positiveCount} of ${portfolioData.length} holdings show unrealized gains.`);
+
+            insights.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                insightsList.appendChild(li);
+            });
+        }
+
+        async function analyzeWithAI(totalValue, totalGainLoss, totalGainPercent, totalCost) {
+            if (!openAiApiKey) {
+                displayAIAnalysis('Add your OpenAI API key above to unlock GPT-5 portfolio guidance. The analysis is generated locally in your browser.', { variant: 'info', showDisclaimer: false });
+                return;
+            }
+
+            try {
+                aiAnalysisSection.innerHTML = `
+                    <div class="analyzing">
+                        <div class="spinner"></div>
+                        <h3>GPT-5 is analyzing your portfolio...</h3>
+                    </div>
+                `;
+
+                const categories = Object.entries(categoryData).map(([name, data]) => ({
+                    name,
+                    marketValue: roundNumber(data.value),
+                    portfolioPercent: percentageOf(data.value, totalValue),
+                    holdings: data.count,
+                    gainLoss: roundNumber(data.gainLoss),
+                    gainPercent: data.cost !== 0 ? (data.gainLoss / data.cost) * 100 : 0
+                }));
+
+                const topHoldings = [...portfolioData]
+                    .sort((a, b) => b.marketValue - a.marketValue)
+                    .slice(0, 10)
+                    .map(stock => ({
+                        symbol: stock.symbol,
+                        description: stock.description,
+                        category: stock.category,
+                        marketValue: roundNumber(stock.marketValue),
+                        portfolioPercent: percentageOf(stock.marketValue, totalValue),
+                        gainPercent: stock.gainPercent
+                    }));
+
+                const laggards = portfolioData
+                    .filter(stock => stock.gainLoss < 0)
+                    .sort((a, b) => a.gainPercent - b.gainPercent)
+                    .slice(0, 5)
+                    .map(stock => ({
+                        symbol: stock.symbol,
+                        category: stock.category,
+                        gainPercent: stock.gainPercent,
+                        gainLoss: roundNumber(stock.gainLoss)
+                    }));
+
+                const topThreeValue = [...portfolioData]
+                    .sort((a, b) => b.marketValue - a.marketValue)
+                    .slice(0, 3)
+                    .reduce((sum, stock) => sum + stock.marketValue, 0);
+
+                const diversification = {
+                    totalCategories: categories.length,
+                    totalHoldings: portfolioData.length,
+                    concentrationTopHolding: topHoldings.length ? topHoldings[0].portfolioPercent : 0,
+                    concentrationTopThree: percentageOf(topThreeValue, totalValue)
                 };
 
-                const prompt = `Analyze this investment portfolio and provide detailed insights:
+                const aiPayload = {
+                    totals: {
+                        totalValue: roundNumber(totalValue),
+                        totalGainLoss: roundNumber(totalGainLoss),
+                        totalGainPercent,
+                        totalCost: roundNumber(totalCost)
+                    },
+                    categories,
+                    topHoldings,
+                    underperformers: laggards,
+                    diversification
+                };
 
-Portfolio Summary:
-- Total Value: ${formatCurrency(totalValue)}
-- Total Gain/Loss: ${formatCurrency(totalGainLoss)} (${formatPercent(totalGainPercent)})
-- Number of Holdings: ${portfolioData.length}
+                const prompt = `You are an experienced financial analyst helping an investor with a moderate risk tolerance and a long-term horizon.\n` +
+                    `Review the following portfolio data (provided as JSON) and deliver a concise, data-driven report.\n` +
+                    `Focus on diversification, risk concentrations, performance drivers, and at least three actionable suggestions for improvement or rebalancing.\n` +
+                    `Highlight notable strengths, call out any red flags, and suggest categories or ideas to explore (without naming individual securities not already owned unless necessary).\n` +
+                    `Close with a short risk disclaimer.\n\nPortfolio data:\n${JSON.stringify(aiPayload, null, 2)}\n` +
+                    `Format the response with clear section headings and bullet points where helpful. Keep the report under 400 words.`;
 
-Category Breakdown:
-${Object.entries(categoryData).map(([cat, data]) => 
-    `- ${cat}: ${formatCurrency(data.value)} (${(data.value/totalValue*100).toFixed(1)}%)`
-).join('\n')}
-
-Top 10 Holdings:
-${portfolioSummary.topHoldings.map(stock => 
-    `- ${stock.symbol} (${stock.category}): ${formatCurrency(stock.marketValue)} (${stock.portfolioPercent}% of portfolio, ${formatPercent(stock.gainPercent)} gain)`
-).join('\n')}
-
-Please provide:
-1. Portfolio diversification analysis
-2. Risk assessment based on concentration and sector allocation
-3. Performance evaluation
-4. Specific recommendations for improvement
-5. Potential concerns or red flags
-6. Suggestions for rebalancing or new investments
-
-Format your response as a comprehensive analysis with actionable insights.`;
-
-                const response = await fetch("https://api.anthropic.com/v1/messages", {
-                    method: "POST",
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json",
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${openAiApiKey}`
                     },
                     body: JSON.stringify({
-                        model: "claude-sonnet-4-20250514",
-                        max_tokens: 2000,
+                        model: 'gpt-5',
+                        temperature: 0.6,
+                        max_tokens: 1200,
                         messages: [
-                            { role: "user", content: prompt }
+                            { role: 'system', content: 'You are a meticulous financial analyst who explains findings clearly while emphasizing that insights are educational, not investment advice.' },
+                            { role: 'user', content: prompt }
                         ]
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`AI analysis failed: ${response.status}`);
+                    const errorText = await response.text();
+                    throw new Error(`GPT-5 request failed (${response.status}): ${errorText}`);
                 }
 
                 const data = await response.json();
-                const analysis = data.content[0].text;
+                const analysis = data?.choices?.[0]?.message?.content?.trim();
+                if (!analysis) {
+                    throw new Error('GPT-5 did not return any analysis.');
+                }
 
                 displayAIAnalysis(analysis);
-
-            } catch (error) {
-                console.error('AI analysis error:', error);
-                displayAIAnalysis('Unable to generate AI analysis at this time. Please try again later.');
+            } catch (err) {
+                console.error('AI analysis error:', err);
+                displayAIAnalysis('Unable to generate GPT-5 analysis right now. Please verify your API key and try again.', { variant: 'error' });
             }
         }
 
-        function displayAIAnalysis(analysis) {
-            const aiSection = document.getElementById('aiAnalysis');
-            aiSection.innerHTML = `
-                <h3>🤖 AI Portfolio Analysis</h3>
-                <div style="white-space: pre-line; line-height: 1.6; font-size: 1.1rem;">
-                    ${analysis}
-                </div>
-            `;
+        function displayAIAnalysis(message, options = {}) {
+            const { variant = 'default', showDisclaimer = true } = options;
+
+            aiAnalysisSection.classList.remove('error-state');
+            if (variant === 'error') {
+                aiAnalysisSection.classList.add('error-state');
+            }
+
+            aiAnalysisSection.innerHTML = '';
+            const heading = document.createElement('h3');
+            heading.textContent = '🤖 GPT-5 Portfolio Analysis';
+            aiAnalysisSection.appendChild(heading);
+
+            const pre = document.createElement('pre');
+            pre.textContent = message;
+            aiAnalysisSection.appendChild(pre);
+
+            if (showDisclaimer) {
+                const footnote = document.createElement('p');
+                footnote.className = 'ai-footnote';
+                footnote.textContent = 'AI-generated insights powered by GPT-5. For educational purposes only — not personalized financial advice.';
+                aiAnalysisSection.appendChild(footnote);
+            }
         }
 
         function formatCurrency(value) {
+            const number = Number.isFinite(value) ? value : 0;
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD'
-            }).format(value);
+            }).format(number);
         }
 
         function formatPercent(value) {
-            return `${value.toFixed(2)}%`;
+            if (!Number.isFinite(value)) {
+                return '0.00%';
+            }
+            const rounded = Math.round(value * 100) / 100;
+            return `${rounded.toFixed(2)}%`;
+        }
+
+        function roundNumber(value) {
+            return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+        }
+
+        function percentageOf(value, total) {
+            if (!total) return 0;
+            return Number(((value / total) * 100).toFixed(2));
         }
 
         function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
+            errorBanner.textContent = message;
+            errorBanner.style.display = 'block';
+            results.style.display = 'none';
         }
     </script>
 </body>
