@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schwab Portfolio Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.6/chart.umd.min.js" integrity="sha512-6q2gbCOAi0VwAJotbiXhUyXfWIvRFFY0pM0hjW1i0O+2S6UpHVZG6Aqp7z6mHkNWTCMqhurx7sdc3+9YGcQn0w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-8dJvKP6q5pIvylI2zdh0dX8GZFODdgNpTi27C/7fyqCkCmZJLdnOjFkMrDXLI4YAlnXrhIRbkIuAeGHGZnwV3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --brand-primary: #6366f1;
+            --brand-accent: #ec4899;
+            --brand-secondary: #14b8a6;
+            --surface: rgba(255, 255, 255, 0.96);
+            --surface-muted: rgba(255, 255, 255, 0.82);
+            --border: rgba(148, 163, 184, 0.25);
+            --text: #0f172a;
+            --text-muted: #475569;
+            --positive: #047857;
+            --negative: #dc2626;
+            --card-shadow: 0 25px 60px rgba(99, 102, 241, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at top right, #fde68a, #a855f7 35%, #312e81 80%);
+            min-height: 100vh;
+            padding: 32px 16px 64px;
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1220px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86));
+            border-radius: 28px;
+            padding: 40px 48px 56px;
+            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+            backdrop-filter: blur(14px);
+        }
+
+        @media (max-width: 900px) {
+            .page {
+                padding: 32px 24px 48px;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2.2rem, 4vw, 3rem);
+            letter-spacing: -0.03em;
+            background: linear-gradient(120deg, var(--brand-primary), var(--brand-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 640px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .upload-section {
+            margin: 36px 0;
+            background: linear-gradient(130deg, rgba(99, 102, 241, 0.95), rgba(236, 72, 153, 0.92));
+            border-radius: 22px;
+            padding: 48px 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 28px 60px rgba(79, 70, 229, 0.3);
+            color: white;
+        }
+
+        .upload-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 60%);
+            pointer-events: none;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2.5px dashed rgba(255, 255, 255, 0.75);
+            border-radius: 18px;
+            padding: 56px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 18px;
+        }
+
+        .upload-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            font-size: 1rem;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+
+        .upload-subtext a {
+            color: #fef3c7;
+            font-weight: 600;
+        }
+
+        .selected-file {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #fcd34d;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .alert {
+            padding: 18px 22px;
+            border-radius: 14px;
+            border: 1px solid rgba(220, 38, 38, 0.35);
+            background: rgba(254, 226, 226, 0.9);
+            color: #b91c1c;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            padding: 36px 0;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 58px;
+            height: 58px;
+            border: 5px solid rgba(148, 163, 184, 0.35);
+            border-top: 5px solid var(--brand-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 22px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 150px;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .stat-card .value {
+            font-size: clamp(1.8rem, 3vw, 2.3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-card .muted {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+
+        .positive {
+            color: var(--positive) !important;
+        }
+
+        .negative {
+            color: var(--negative) !important;
+        }
+
+        .charts-grid,
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .chart-card,
+        .table-card,
+        .insight-card {
+            background: var(--surface);
+            border-radius: 22px;
+            padding: 24px 26px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+        }
+
+        .chart-header,
+        .table-header {
+            margin-bottom: 18px;
+        }
+
+        .chart-header h3,
+        .table-header h3,
+        .insight-card h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+
+        .chart-header p,
+        .table-header p {
+            margin: 6px 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+            font-size: 0.95rem;
+        }
+
+        th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        td .symbol {
+            font-weight: 600;
+        }
+
+        td .description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .dual-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+
+        .dual-table h4 {
+            margin: 0 0 10px;
+            font-size: 1.05rem;
+        }
+
+        .mini-table thead th {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .mini-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mini-table td {
+            font-size: 0.9rem;
+        }
+
+        .insight-card ul {
+            margin: 16px 0 0;
+            padding-left: 18px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .insight-card li strong {
+            color: var(--text);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--brand-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 12px 40px;
+            }
+
+            .upload-section {
+                padding: 40px 20px;
+            }
+
+            .stat-card {
+                min-height: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="header">
+            <div class="badge">Schwab CSV Ready</div>
+            <h1>Schwab Portfolio Visualizer</h1>
+            <p>Upload your Schwab <em>Individual Positions</em> CSV export to transform raw holdings into an interactive snapshot of allocations, performance, and income potential.</p>
+        </header>
+
+        <section class="upload-section">
+            <label class="upload-area" for="fileInput" id="uploadArea">
+                <div class="upload-icon">📊</div>
+                <div class="upload-text">Drop your Schwab CSV here</div>
+                <div class="upload-subtext">
+                    or click to browse for a file.
+                    <span class="selected-file" id="selectedFile">No file selected yet</span>
+                    Need an example? <a href="samples/individual-positions-2024-08-15-105416.csv" download>Download the sample export</a>.
+                </div>
+            </label>
+            <input type="file" id="fileInput" accept=".csv" />
+        </section>
+
+        <div id="errorMessage" class="alert hidden"></div>
+        <div id="loadingState" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Crunching your portfolio data…</p>
+        </div>
+
+        <section id="analysisSection" class="analysis hidden">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Total Market Value</span>
+                    <span class="value" id="totalMarketValue">$0.00</span>
+                    <span class="muted" id="positionsSummary">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Net Gain / Loss</span>
+                    <span class="value" id="netGainLoss">$0.00</span>
+                    <span class="muted" id="netGainLossPercent">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Day Change</span>
+                    <span class="value" id="dailyChange">$0.00</span>
+                    <span class="muted" id="dailyChangePercent">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Weighted Dividend Yield</span>
+                    <span class="value" id="dividendYield">0.00%</span>
+                    <span class="muted" id="dividendIncome">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Cash On Hand</span>
+                    <span class="value" id="cashValue">$0.00</span>
+                    <span class="muted" id="cashAllocation">--</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Invested Cost Basis</span>
+                    <span class="value" id="costBasis">$0.00</span>
+                    <span class="muted" id="costBasisNote">--</span>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Allocation by Security Type</h3>
+                        <p>Market value split across asset categories</p>
+                    </div>
+                    <canvas id="allocationChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Top Holdings</h3>
+                        <p>Share of portfolio by market value</p>
+                    </div>
+                    <canvas id="topHoldingsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="tables-grid">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Largest Positions</h3>
+                        <p>Your top holdings ranked by allocation</p>
+                    </div>
+                    <table id="topHoldingsTable">
+                        <thead>
+                            <tr>
+                                <th>Holding</th>
+                                <th>Allocation</th>
+                                <th>Market Value</th>
+                                <th>Gain / Loss</th>
+                                <th>Dividend</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Top Movers</h3>
+                        <p>Winners and laggards based on total gain</p>
+                    </div>
+                    <div class="dual-table">
+                        <div>
+                            <h4>Leaders</h4>
+                            <table class="mini-table" id="topGainersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Gain</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>On Watch</h4>
+                            <table class="mini-table" id="topLosersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Loss</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <h3>Portfolio Highlights</h3>
+                <ul id="insightsList"></ul>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const uploadArea = document.getElementById("uploadArea");
+        const selectedFileLabel = document.getElementById("selectedFile");
+        const errorMessage = document.getElementById("errorMessage");
+        const loadingState = document.getElementById("loadingState");
+        const analysisSection = document.getElementById("analysisSection");
+
+        const currencyFormatter = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 2,
+        });
+        const percentFormatter = new Intl.NumberFormat("en-US", {
+            style: "percent",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
+        let allocationChartInstance = null;
+        let topHoldingsChartInstance = null;
+
+        function parseNumber(value) {
+            if (!value || value === "--") return 0;
+            const cleaned = String(value).replace(/[,]/g, "").trim();
+            const parsed = parseFloat(cleaned);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function parseCurrency(value) {
+            if (!value || value === "--") return 0;
+            const cleaned = String(value)
+                .replace(/[$,]/g, "")
+                .replace(/\s/g, "")
+                .trim();
+            const parsed = parseFloat(cleaned);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function parsePercent(value) {
+            if (!value || value === "--" || value === "N/A") return 0;
+            const cleaned = String(value).replace(/[%]/g, "").trim();
+            const parsed = parseFloat(cleaned);
+            return Number.isFinite(parsed) ? parsed / 100 : 0;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove("hidden");
+        }
+
+        function clearError() {
+            errorMessage.classList.add("hidden");
+            errorMessage.textContent = "";
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                loadingState.classList.remove("hidden");
+            } else {
+                loadingState.classList.add("hidden");
+            }
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+            clearError();
+            setLoading(true);
+            selectedFileLabel.textContent = file.name;
+
+            Papa.parse(file, {
+                skipEmptyLines: "greedy",
+                complete: (results) => {
+                    try {
+                        const holdings = transformRows(results.data);
+                        if (!holdings.length) {
+                            throw new Error("We couldn't find any positions in that file. Double-check you're using the Schwab Individual Positions export.");
+                        }
+                        const metrics = computeMetrics(holdings);
+                        renderDashboard(metrics);
+                        analysisSection.classList.remove("hidden");
+                        analysisSection.scrollIntoView({ behavior: "smooth", block: "start" });
+                    } catch (error) {
+                        showError(error.message);
+                        analysisSection.classList.add("hidden");
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+                error: (error) => {
+                    setLoading(false);
+                    showError(error.message || "Something went wrong while reading the CSV file.");
+                },
+            });
+        }
+
+        function transformRows(rows) {
+            if (!Array.isArray(rows)) return [];
+            const headerIndex = rows.findIndex((row) =>
+                Array.isArray(row) && row.some((cell) => String(cell || "").toLowerCase().trim() === "symbol")
+            );
+
+            if (headerIndex === -1) {
+                throw new Error("Unable to locate the header row. Make sure you uploaded the raw Schwab CSV export without modifications.");
+            }
+
+            const headers = rows[headerIndex].map((cell) => String(cell || "").trim());
+            const dataRows = rows.slice(headerIndex + 1);
+            const holdings = [];
+
+            for (const row of dataRows) {
+                if (!Array.isArray(row)) continue;
+                if (!row.length) continue;
+                const symbol = String(row[0] || "").trim();
+                if (!symbol || symbol === "Account Total") continue;
+
+                const record = {};
+                headers.forEach((header, index) => {
+                    record[header] = row[index] !== undefined ? String(row[index]).trim() : "";
+                });
+
+                const securityType = record["Security Type"] || "Other";
+                const description = record["Description"] || symbol;
+
+                const holding = {
+                    symbol,
+                    description,
+                    quantity: parseNumber(record["Qty (Quantity)"]),
+                    price: parseCurrency(record["Price"]),
+                    priceChangeDollar: parseCurrency(record["Price Chng $ (Price Change $)"]),
+                    priceChangePercent: parsePercent(record["Price Chng % (Price Change %)"]),
+                    marketValue: parseCurrency(record["Mkt Val (Market Value)"]),
+                    dayChange: parseCurrency(record["Day Chng $ (Day Change $)"]),
+                    dayChangePercent: parsePercent(record["Day Chng % (Day Change %)"]),
+                    costBasis: parseCurrency(record["Cost Basis"]),
+                    gainLoss: parseCurrency(record["Gain $ (Gain/Loss $)"]),
+                    gainLossPercent: parsePercent(record["Gain % (Gain/Loss %)"]),
+                    percentOfAccount: parsePercent(record["% of Acct (% of Account)"]),
+                    dividendYield: parsePercent(record["Div Yld (Dividend Yield)"]),
+                    securityType,
+                    reinvest: record["Reinvest?"] || "",
+                    reinvestCapitalGains: record["Reinvest Capital Gains?"] || "",
+                };
+
+                const isPlaceholder = symbol.toLowerCase().includes("positions for account");
+                if (isPlaceholder) {
+                    continue;
+                }
+
+                // Skip empty trailing rows
+                const isEmptyRow =
+                    !holding.marketValue &&
+                    !holding.costBasis &&
+                    !holding.quantity &&
+                    !holding.price;
+
+                if (isEmptyRow) continue;
+
+                holdings.push(holding);
+            }
+
+            return holdings;
+        }
+
+        function computeMetrics(holdings) {
+            const totalMarketValue = holdings.reduce((sum, holding) => sum + holding.marketValue, 0);
+            const totalCostBasis = holdings.reduce((sum, holding) => sum + holding.costBasis, 0);
+            const totalDayChange = holdings.reduce((sum, holding) => sum + holding.dayChange, 0);
+            const totalGainLoss = holdings.reduce((sum, holding) => sum + holding.gainLoss, 0) || totalMarketValue - totalCostBasis;
+            const previousValue = holdings.reduce((sum, holding) => sum + (holding.marketValue - holding.dayChange), 0);
+            const dayChangePercent = previousValue > 0 ? totalDayChange / previousValue : 0;
+            const gainLossPercent = totalCostBasis > 0 ? totalGainLoss / totalCostBasis : 0;
+
+            const weightedDividend = holdings.reduce((sum, holding) => sum + holding.marketValue * holding.dividendYield, 0);
+            const weightedDividendYield = totalMarketValue > 0 ? weightedDividend / totalMarketValue : 0;
+            const annualIncome = totalMarketValue * weightedDividendYield;
+            const monthlyIncome = annualIncome / 12;
+
+            const cashHoldings = holdings.filter(
+                (holding) => /cash/i.test(holding.symbol) || /cash/.test(holding.securityType)
+            );
+            const cashValue = cashHoldings.reduce((sum, holding) => sum + holding.marketValue, 0);
+            const cashAllocation = totalMarketValue > 0 ? cashValue / totalMarketValue : 0;
+
+            const investableHoldings = holdings.filter(
+                (holding) =>
+                    holding.marketValue > 0 &&
+                    !/cash/i.test(holding.symbol) &&
+                    !/cash/.test(holding.securityType)
+            );
+
+            const positionsCount = investableHoldings.length;
+
+            const allocationByTypeMap = new Map();
+            holdings.forEach((holding) => {
+                const type = holding.securityType || "Other";
+                allocationByTypeMap.set(type, (allocationByTypeMap.get(type) || 0) + holding.marketValue);
+            });
+
+            const allocationByType = Array.from(allocationByTypeMap.entries())
+                .map(([type, value]) => ({
+                    type,
+                    value,
+                    weight: totalMarketValue > 0 ? value / totalMarketValue : 0,
+                }))
+                .sort((a, b) => b.value - a.value);
+
+            const topHoldings = [...investableHoldings]
+                .sort((a, b) => b.marketValue - a.marketValue)
+                .slice(0, 10);
+
+            const topFiveAllocation = totalMarketValue > 0
+                ? topHoldings.slice(0, 5).reduce((sum, holding) => sum + holding.marketValue, 0) / totalMarketValue
+                : 0;
+
+            const topGainers = [...investableHoldings]
+                .filter((holding) => holding.gainLoss > 0)
+                .sort((a, b) => b.gainLoss - a.gainLoss)
+                .slice(0, 5);
+
+            const topLosers = [...investableHoldings]
+                .filter((holding) => holding.gainLoss < 0)
+                .sort((a, b) => a.gainLoss - b.gainLoss)
+                .slice(0, 5);
+
+            return {
+                holdings,
+                totalMarketValue,
+                totalCostBasis,
+                totalDayChange,
+                totalGainLoss,
+                gainLossPercent,
+                dayChangePercent,
+                weightedDividendYield,
+                annualIncome,
+                monthlyIncome,
+                cashValue,
+                cashAllocation,
+                positionsCount,
+                holdingTypesCount: allocationByType.length,
+                allocationByType,
+                topHoldings,
+                topFiveAllocation,
+                topGainers,
+                topLosers,
+            };
+        }
+
+        function renderDashboard(metrics) {
+            renderStats(metrics);
+            renderCharts(metrics);
+            renderTables(metrics);
+            renderInsights(metrics);
+        }
+
+        function renderStats(metrics) {
+            const {
+                totalMarketValue,
+                positionsCount,
+                holdingTypesCount,
+                totalCostBasis,
+                totalGainLoss,
+                gainLossPercent,
+                totalDayChange,
+                dayChangePercent,
+                weightedDividendYield,
+                annualIncome,
+                monthlyIncome,
+                cashValue,
+                cashAllocation,
+            } = metrics;
+
+            const totalMarketValueEl = document.getElementById("totalMarketValue");
+            const positionsSummaryEl = document.getElementById("positionsSummary");
+            const netGainLossEl = document.getElementById("netGainLoss");
+            const netGainLossPercentEl = document.getElementById("netGainLossPercent");
+            const dailyChangeEl = document.getElementById("dailyChange");
+            const dailyChangePercentEl = document.getElementById("dailyChangePercent");
+            const dividendYieldEl = document.getElementById("dividendYield");
+            const dividendIncomeEl = document.getElementById("dividendIncome");
+            const cashValueEl = document.getElementById("cashValue");
+            const cashAllocationEl = document.getElementById("cashAllocation");
+            const costBasisEl = document.getElementById("costBasis");
+            const costBasisNoteEl = document.getElementById("costBasisNote");
+
+            totalMarketValueEl.textContent = currencyFormatter.format(totalMarketValue);
+            positionsSummaryEl.textContent = `${positionsCount} invested positions across ${holdingTypesCount} asset types`;
+
+            netGainLossEl.textContent = currencyFormatter.format(totalGainLoss);
+            netGainLossEl.classList.toggle("positive", totalGainLoss > 0);
+            netGainLossEl.classList.toggle("negative", totalGainLoss < 0);
+            netGainLossPercentEl.textContent = `${totalCostBasis > 0 ? percentFormatter.format(gainLossPercent) : "--"} vs cost basis`;
+
+            dailyChangeEl.textContent = currencyFormatter.format(totalDayChange);
+            dailyChangeEl.classList.toggle("positive", totalDayChange > 0);
+            dailyChangeEl.classList.toggle("negative", totalDayChange < 0);
+            dailyChangePercentEl.textContent = `${percentFormatter.format(dayChangePercent)} today`;
+
+            dividendYieldEl.textContent = percentFormatter.format(weightedDividendYield);
+            dividendIncomeEl.textContent = `${currencyFormatter.format(annualIncome)} annually • ${currencyFormatter.format(monthlyIncome)} / month`;
+
+            cashValueEl.textContent = currencyFormatter.format(cashValue);
+            cashValueEl.classList.toggle("positive", false);
+            cashValueEl.classList.toggle("negative", false);
+            cashAllocationEl.textContent = `Cash allocation: ${percentFormatter.format(cashAllocation)}`;
+
+            costBasisEl.textContent = currencyFormatter.format(totalCostBasis);
+            costBasisNoteEl.textContent = "Total capital invested";
+        }
+
+        function renderCharts(metrics) {
+            renderAllocationChart(metrics);
+            renderTopHoldingsChart(metrics);
+        }
+
+        function renderAllocationChart(metrics) {
+            const ctx = document.getElementById("allocationChart").getContext("2d");
+            const labels = metrics.allocationByType.map((item) => item.type);
+            const values = metrics.allocationByType.map((item) => item.value);
+            const palette = [
+                "#6366f1",
+                "#ec4899",
+                "#14b8a6",
+                "#f97316",
+                "#a855f7",
+                "#facc15",
+                "#ef4444",
+                "#06b6d4",
+                "#22d3ee",
+                "#10b981",
+            ];
+
+            if (allocationChartInstance) {
+                allocationChartInstance.destroy();
+            }
+
+            allocationChartInstance = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            data: values,
+                            backgroundColor: values.map((_, index) => palette[index % palette.length]),
+                            borderWidth: 0,
+                            hoverOffset: 12,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "bottom",
+                            labels: {
+                                usePointStyle: true,
+                            },
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const value = context.parsed;
+                                    const weight = metrics.totalMarketValue > 0 ? value / metrics.totalMarketValue : 0;
+                                    return `${context.label}: ${currencyFormatter.format(value)} (${percentFormatter.format(weight)})`;
+                                },
+                            },
+                        },
+                    },
+                    cutout: "62%",
+                },
+            });
+        }
+
+        function renderTopHoldingsChart(metrics) {
+            const ctx = document.getElementById("topHoldingsChart").getContext("2d");
+            const labels = metrics.topHoldings.map((holding) => holding.symbol || holding.description);
+            const values = metrics.topHoldings.map((holding) =>
+                metrics.totalMarketValue > 0 ? (holding.marketValue / metrics.totalMarketValue) * 100 : 0
+            );
+
+            if (topHoldingsChartInstance) {
+                topHoldingsChartInstance.destroy();
+            }
+
+            topHoldingsChartInstance = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            data: values,
+                            borderRadius: 12,
+                            backgroundColor: "rgba(99, 102, 241, 0.8)",
+                            hoverBackgroundColor: "rgba(236, 72, 153, 0.9)",
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: "y",
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const holding = metrics.topHoldings[context.dataIndex];
+                                    return [
+                                        `${percentFormatter.format(context.parsed.x / 100)} allocation`,
+                                        `Market value: ${currencyFormatter.format(holding.marketValue)}`,
+                                    ];
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: (value) => `${value}%`,
+                            },
+                            grid: {
+                                color: "rgba(148, 163, 184, 0.2)",
+                            },
+                            max: Math.min(100, Math.ceil(Math.max(...values, 0) / 5) * 5 || 10),
+                        },
+                        y: {
+                            grid: { display: false },
+                        },
+                    },
+                },
+            });
+        }
+
+        function renderTables(metrics) {
+            renderTopHoldingsTable(metrics);
+            renderMoversTables(metrics);
+        }
+
+        function renderTopHoldingsTable(metrics) {
+            const tbody = document.querySelector("#topHoldingsTable tbody");
+            tbody.innerHTML = "";
+
+            metrics.topHoldings.forEach((holding) => {
+                const allocation = metrics.totalMarketValue > 0 ? holding.marketValue / metrics.totalMarketValue : 0;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>
+                        <div class="symbol">${holding.symbol}</div>
+                        <div class="description">${holding.description}</div>
+                    </td>
+                    <td>${percentFormatter.format(allocation)}</td>
+                    <td>${currencyFormatter.format(holding.marketValue)}</td>
+                    <td class="${holding.gainLoss > 0 ? "positive" : holding.gainLoss < 0 ? "negative" : ""}">${currencyFormatter.format(holding.gainLoss)}</td>
+                    <td>${holding.dividendYield ? percentFormatter.format(holding.dividendYield) : "—"}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMoversTables(metrics) {
+            const gainersBody = document.querySelector("#topGainersTable tbody");
+            const losersBody = document.querySelector("#topLosersTable tbody");
+            gainersBody.innerHTML = "";
+            losersBody.innerHTML = "";
+
+            if (!metrics.topGainers.length) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+                td.colSpan = 2;
+                td.textContent = "No positive gainers yet";
+                gainersBody.appendChild(tr);
+                tr.appendChild(td);
+            } else {
+                metrics.topGainers.forEach((holding) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${holding.symbol}</td>
+                        <td class="positive">${currencyFormatter.format(holding.gainLoss)} (${percentFormatter.format(holding.gainLossPercent)})</td>
+                    `;
+                    gainersBody.appendChild(tr);
+                });
+            }
+
+            if (!metrics.topLosers.length) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+                td.colSpan = 2;
+                td.textContent = "No negative movers";
+                losersBody.appendChild(tr);
+                tr.appendChild(td);
+            } else {
+                metrics.topLosers.forEach((holding) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${holding.symbol}</td>
+                        <td class="negative">${currencyFormatter.format(holding.gainLoss)} (${percentFormatter.format(holding.gainLossPercent)})</td>
+                    `;
+                    losersBody.appendChild(tr);
+                });
+            }
+        }
+
+        function renderInsights(metrics) {
+            const list = document.getElementById("insightsList");
+            list.innerHTML = "";
+
+            const insights = [];
+
+            if (metrics.topHoldings.length) {
+                const topHolding = metrics.topHoldings[0];
+                const allocation = metrics.totalMarketValue > 0 ? topHolding.marketValue / metrics.totalMarketValue : 0;
+                insights.push(
+                    `Largest position is <strong>${topHolding.symbol}</strong> at ${percentFormatter.format(allocation)} of the portfolio.`
+                );
+            }
+
+            if (metrics.topFiveAllocation) {
+                insights.push(
+                    `Top five holdings account for ${percentFormatter.format(metrics.topFiveAllocation)} of total market value.`
+                );
+            }
+
+            if (metrics.cashAllocation >= 0.15) {
+                insights.push(
+                    `Cash reserves sit at ${percentFormatter.format(metrics.cashAllocation)}, offering a healthy liquidity cushion.`
+                );
+            } else if (metrics.cashAllocation > 0.05) {
+                insights.push(
+                    `Cash allocation is ${percentFormatter.format(metrics.cashAllocation)}, balancing dry powder with market exposure.`
+                );
+            } else {
+                insights.push(
+                    `Cash allocation is lean at ${percentFormatter.format(metrics.cashAllocation)}, keeping most capital invested.`
+                );
+            }
+
+            if (metrics.weightedDividendYield > 0) {
+                insights.push(
+                    `Dividend yield of ${percentFormatter.format(metrics.weightedDividendYield)} projects ${currencyFormatter.format(
+                        metrics.annualIncome
+                    )} in annual income.`
+                );
+            }
+
+            if (metrics.topGainers.length) {
+                const leader = metrics.topGainers[0];
+                insights.push(
+                    `<strong>${leader.symbol}</strong> leads gains with ${currencyFormatter.format(leader.gainLoss)} in unrealized profit.`
+                );
+            }
+
+            if (metrics.topLosers.length) {
+                const laggard = metrics.topLosers[0];
+                insights.push(
+                    `<strong>${laggard.symbol}</strong> trails with ${currencyFormatter.format(laggard.gainLoss)} in unrealized loss.`
+                );
+            }
+
+            if (!insights.length) {
+                insights.push("Upload a CSV to generate personalized highlights.");
+            }
+
+            insights.forEach((text) => {
+                const li = document.createElement("li");
+                li.innerHTML = text;
+                list.appendChild(li);
+            });
+        }
+
+        fileInput.addEventListener("change", (event) => {
+            const [file] = event.target.files;
+            handleFile(file);
+        });
+
+        uploadArea.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            uploadArea.classList.add("dragover");
+        });
+
+        uploadArea.addEventListener("dragleave", () => {
+            uploadArea.classList.remove("dragover");
+        });
+
+        uploadArea.addEventListener("drop", (event) => {
+            event.preventDefault();
+            uploadArea.classList.remove("dragover");
+            const [file] = event.dataTransfer.files;
+            if (file) {
+                handleFile(file);
+            }
+        });
+    </script>
+</body>
+</html>
