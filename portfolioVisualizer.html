@@ -19,6 +19,33 @@
             --positive: #047857;
             --negative: #dc2626;
             --card-shadow: 0 25px 60px rgba(99, 102, 241, 0.18);
+            --background-gradient: radial-gradient(circle at top right, #fde68a, #a855f7 35%, #312e81 80%);
+            --page-background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86));
+            --chart-grid: rgba(148, 163, 184, 0.2);
+            --row-border: rgba(148, 163, 184, 0.18);
+            --tooltip-background: rgba(255, 255, 255, 0.98);
+            --tooltip-border: rgba(148, 163, 184, 0.2);
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --brand-primary: #818cf8;
+            --brand-accent: #f472b6;
+            --brand-secondary: #2dd4bf;
+            --surface: rgba(17, 24, 39, 0.92);
+            --surface-muted: rgba(17, 24, 39, 0.8);
+            --border: rgba(148, 163, 184, 0.35);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --positive: #34d399;
+            --negative: #f87171;
+            --card-shadow: 0 30px 70px rgba(2, 6, 23, 0.65);
+            --background-gradient: radial-gradient(circle at top right, #1e293b, #312e81 50%, #020617 90%);
+            --page-background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.72));
+            --chart-grid: rgba(148, 163, 184, 0.25);
+            --row-border: rgba(71, 85, 105, 0.6);
+            --tooltip-background: rgba(15, 23, 42, 0.92);
+            --tooltip-border: rgba(148, 163, 184, 0.35);
         }
 
         * {
@@ -28,7 +55,7 @@
         body {
             margin: 0;
             font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: radial-gradient(circle at top right, #fde68a, #a855f7 35%, #312e81 80%);
+            background: var(--background-gradient);
             min-height: 100vh;
             padding: 32px 16px 64px;
             color: var(--text);
@@ -37,10 +64,10 @@
         .page {
             max-width: 1220px;
             margin: 0 auto;
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86));
+            background: var(--page-background);
             border-radius: 28px;
             padding: 40px 48px 56px;
-            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+            box-shadow: var(--card-shadow);
             backdrop-filter: blur(14px);
         }
 
@@ -53,6 +80,14 @@
         .header {
             text-align: center;
             margin-bottom: 32px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .header h1 {
@@ -72,6 +107,53 @@
             line-height: 1.6;
         }
 
+        .theme-toggle-button {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            box-shadow: var(--card-shadow);
+        }
+
+        .theme-toggle-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle-button:focus-visible {
+            outline: 2px solid var(--brand-primary);
+            outline-offset: 2px;
+        }
+
+        .theme-toggle-icon {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        :root[data-theme="dark"] .theme-toggle-button {
+            background: rgba(15, 23, 42, 0.88);
+            border-color: rgba(148, 163, 184, 0.45);
+            box-shadow: 0 16px 40px rgba(2, 6, 23, 0.55);
+        }
+
+        :root[data-theme="dark"] .theme-toggle-button:hover {
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        @media (max-width: 600px) {
+            .header-actions {
+                flex-direction: column;
+                justify-content: center;
+                gap: 10px;
+            }
+        }
+
         .upload-section {
             margin: 36px 0;
             background: linear-gradient(130deg, rgba(99, 102, 241, 0.95), rgba(236, 72, 153, 0.92));
@@ -81,6 +163,12 @@
             overflow: hidden;
             box-shadow: 0 28px 60px rgba(79, 70, 229, 0.3);
             color: white;
+        }
+
+        :root[data-theme="dark"] .upload-section {
+            background: linear-gradient(130deg, rgba(129, 140, 248, 0.28), rgba(244, 114, 182, 0.32));
+            box-shadow: 0 28px 60px rgba(15, 23, 42, 0.55);
+            color: var(--text);
         }
 
         .upload-section::before {
@@ -105,11 +193,21 @@
             position: relative;
         }
 
+        :root[data-theme="dark"] .upload-area {
+            border-color: rgba(226, 232, 240, 0.35);
+        }
+
         .upload-area:hover,
         .upload-area.dragover {
             border-color: white;
             background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
+        }
+
+        :root[data-theme="dark"] .upload-area:hover,
+        :root[data-theme="dark"] .upload-area.dragover {
+            border-color: rgba(248, 250, 252, 0.65);
+            background: rgba(148, 163, 184, 0.12);
         }
 
         .upload-icon {
@@ -134,6 +232,10 @@
             font-weight: 600;
         }
 
+        :root[data-theme="dark"] .upload-subtext a {
+            color: #bfdbfe;
+        }
+
         .selected-file {
             display: block;
             margin-top: 12px;
@@ -154,6 +256,16 @@
             color: #b91c1c;
             font-weight: 500;
             margin-bottom: 24px;
+        }
+
+        :root[data-theme="dark"] .alert {
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(248, 113, 113, 0.18);
+            color: #fecaca;
+        }
+
+        :root[data-theme="dark"] .badge {
+            background: rgba(129, 140, 248, 0.22);
         }
 
         .hidden {
@@ -349,7 +461,7 @@
         td {
             text-align: left;
             padding: 12px 8px;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+            border-bottom: 1px solid var(--row-border);
             font-size: 0.95rem;
         }
 
@@ -426,7 +538,7 @@
         }
 
         .mini-table thead th {
-            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            border-bottom: 1px solid var(--row-border);
         }
 
         .mini-table tbody tr:last-child td {
@@ -480,9 +592,24 @@
 <body>
     <div class="page">
         <header class="header">
-            <div class="badge">Schwab CSV Ready</div>
+            <div class="header-actions">
+                <div class="badge">Schwab CSV Ready</div>
+                <button
+                    type="button"
+                    class="theme-toggle-button"
+                    id="themeToggle"
+                    aria-pressed="false"
+                    title="Switch to dark mode"
+                >
+                    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+                    <span class="theme-toggle-label">Dark mode</span>
+                </button>
+            </div>
             <h1>Schwab Portfolio Visualizer</h1>
-            <p>Upload your Schwab <em>Individual Positions</em> CSV export to transform raw holdings into an interactive snapshot of allocations, performance, and income potential.</p>
+            <p>
+                Upload your Schwab <em>Individual Positions</em> CSV export to transform raw holdings into an interactive
+                snapshot of allocations, performance, and income potential.
+            </p>
         </header>
 
         <section class="upload-section">
@@ -646,6 +773,13 @@
             ? Array.from(positionsTable.querySelectorAll("thead th[data-sort-key]"))
             : [];
 
+        const themeToggleButton = document.getElementById("themeToggle");
+        const themePreferenceKey = "portfolioVisualizerTheme";
+        const prefersDarkScheme = typeof window.matchMedia === "function"
+            ? window.matchMedia("(prefers-color-scheme: dark)")
+            : { matches: false };
+        let usingSystemPreference = true;
+
         const currencyFormatter = new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
@@ -660,6 +794,26 @@
         let allocationChartInstance = null;
         let topHoldingsChartInstance = null;
         let latestMetrics = null;
+
+        initializeTheme();
+
+        if (themeToggleButton) {
+            themeToggleButton.addEventListener("click", () => {
+                const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+                applyTheme(nextTheme, { persist: true, refreshCharts: true });
+            });
+        }
+
+        const systemThemeListener = (event) => {
+            if (!usingSystemPreference) return;
+            applyTheme(event.matches ? "dark" : "light", { persist: false, refreshCharts: true });
+        };
+
+        if (typeof prefersDarkScheme.addEventListener === "function") {
+            prefersDarkScheme.addEventListener("change", systemThemeListener);
+        } else if (typeof prefersDarkScheme.addListener === "function") {
+            prefersDarkScheme.addListener(systemThemeListener);
+        }
 
         const positionsTableState = {
             showAll: false,
@@ -686,6 +840,103 @@
                 positionsTableState.showAll = !positionsTableState.showAll;
                 renderPositionsTable(latestMetrics);
             });
+        }
+
+        function initializeTheme() {
+            try {
+                const storedTheme = localStorage.getItem(themePreferenceKey);
+                usingSystemPreference = !storedTheme;
+                const themeToApply = storedTheme || (prefersDarkScheme.matches ? "dark" : "light");
+                applyTheme(themeToApply, { persist: false, refreshCharts: false });
+            } catch (error) {
+                console.warn("Unable to read saved theme preference:", error);
+                applyTheme(prefersDarkScheme.matches ? "dark" : "light", { persist: false, refreshCharts: false });
+            }
+        }
+
+        function applyTheme(theme, { persist = true, refreshCharts = true } = {}) {
+            if (!theme) return;
+
+            document.documentElement.dataset.theme = theme;
+            const isDark = theme === "dark";
+
+            if (persist) {
+                try {
+                    localStorage.setItem(themePreferenceKey, theme);
+                    usingSystemPreference = false;
+                } catch (error) {
+                    console.warn("Unable to store theme preference:", error);
+                }
+            }
+
+            if (themeToggleButton) {
+                themeToggleButton.setAttribute("aria-pressed", isDark ? "true" : "false");
+                themeToggleButton.setAttribute("title", isDark ? "Switch to light mode" : "Switch to dark mode");
+                const iconElement = themeToggleButton.querySelector(".theme-toggle-icon");
+                const labelElement = themeToggleButton.querySelector(".theme-toggle-label");
+                if (iconElement) {
+                    iconElement.textContent = isDark ? "☀️" : "🌙";
+                }
+                if (labelElement) {
+                    labelElement.textContent = isDark ? "Light mode" : "Dark mode";
+                }
+            }
+
+            syncChartTheme(refreshCharts);
+        }
+
+        function syncChartTheme(shouldRefresh = false) {
+            const theme = getThemeColors();
+            if (typeof Chart !== "undefined") {
+                Chart.defaults.color = theme.text;
+                Chart.defaults.borderColor = theme.grid;
+            }
+
+            if (shouldRefresh && latestMetrics) {
+                renderCharts(latestMetrics);
+            }
+        }
+
+        function getCssVariable(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        function getThemeColors() {
+            return {
+                text: getCssVariable("--text") || "#0f172a",
+                muted: getCssVariable("--text-muted") || "#475569",
+                grid: getCssVariable("--chart-grid") || "rgba(148, 163, 184, 0.2)",
+                tooltipBackground: getCssVariable("--tooltip-background") || "rgba(255, 255, 255, 0.98)",
+                tooltipBorder: getCssVariable("--tooltip-border") || "rgba(148, 163, 184, 0.2)",
+                brandPrimary: getCssVariable("--brand-primary") || "#6366f1",
+                brandAccent: getCssVariable("--brand-accent") || "#ec4899",
+            };
+        }
+
+        function hexToRgba(color, alpha = 1) {
+            if (!color) return `rgba(0, 0, 0, ${alpha})`;
+
+            const value = color.trim();
+            if (value.startsWith("rgb")) {
+                return value;
+            }
+
+            const hex = value.replace("#", "");
+            if (hex.length === 3) {
+                const r = parseInt(hex[0] + hex[0], 16);
+                const g = parseInt(hex[1] + hex[1], 16);
+                const b = parseInt(hex[2] + hex[2], 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            if (hex.length === 6) {
+                const r = parseInt(hex.slice(0, 2), 16);
+                const g = parseInt(hex.slice(2, 4), 16);
+                const b = parseInt(hex.slice(4, 6), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            return color;
         }
 
         function parseNumber(value) {
@@ -1046,6 +1297,7 @@
                 "#22d3ee",
                 "#10b981",
             ];
+            const theme = getThemeColors();
 
             if (allocationChartInstance) {
                 allocationChartInstance.destroy();
@@ -1072,9 +1324,15 @@
                             position: "bottom",
                             labels: {
                                 usePointStyle: true,
+                                color: theme.text,
                             },
                         },
                         tooltip: {
+                            backgroundColor: theme.tooltipBackground,
+                            borderColor: theme.tooltipBorder,
+                            borderWidth: 1,
+                            titleColor: theme.text,
+                            bodyColor: theme.text,
                             callbacks: {
                                 label: (context) => {
                                     const value = context.parsed;
@@ -1095,6 +1353,9 @@
             const values = metrics.topHoldings.map((holding) =>
                 metrics.totalMarketValue > 0 ? (holding.marketValue / metrics.totalMarketValue) * 100 : 0
             );
+            const theme = getThemeColors();
+            const primaryColor = hexToRgba(theme.brandPrimary, 0.82);
+            const accentColor = hexToRgba(theme.brandAccent, 0.9);
 
             if (topHoldingsChartInstance) {
                 topHoldingsChartInstance.destroy();
@@ -1108,8 +1369,8 @@
                         {
                             data: values,
                             borderRadius: 12,
-                            backgroundColor: "rgba(99, 102, 241, 0.8)",
-                            hoverBackgroundColor: "rgba(236, 72, 153, 0.9)",
+                            backgroundColor: primaryColor,
+                            hoverBackgroundColor: accentColor,
                         },
                     ],
                 },
@@ -1120,6 +1381,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: theme.tooltipBackground,
+                            borderColor: theme.tooltipBorder,
+                            borderWidth: 1,
+                            titleColor: theme.text,
+                            bodyColor: theme.text,
                             callbacks: {
                                 label: (context) => {
                                     const holding = metrics.topHoldings[context.dataIndex];
@@ -1134,15 +1400,19 @@
                     scales: {
                         x: {
                             ticks: {
+                                color: theme.muted,
                                 callback: (value) => `${value}%`,
                             },
                             grid: {
-                                color: "rgba(148, 163, 184, 0.2)",
+                                color: theme.grid,
                             },
                             max: Math.min(100, Math.ceil(Math.max(...values, 0) / 5) * 5 || 10),
                         },
                         y: {
                             grid: { display: false },
+                            ticks: {
+                                color: theme.text,
+                            },
                         },
                     },
                 },
