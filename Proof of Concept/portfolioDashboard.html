@@ -183,6 +183,7 @@
             outline: none;
         }
 
+
         .comparison-controls {
             display: flex;
             flex-wrap: wrap;
@@ -215,7 +216,6 @@
             border-color: rgba(76, 139, 245, 0.45);
             background: rgba(20, 27, 41, 0.85);
         }
-
         .custom-range {
             display: inline-flex;
             align-items: center;
@@ -436,6 +436,22 @@
                         fill: false,
                         hidden: true,
                         order: 3
+                        label: 'Account Value',
+                        data: chartData.values,
+                        fill: true,
+                        tension: 0.35,
+                        borderColor: 'rgba(108, 162, 255, 1)',
+                        backgroundColor: (ctx) => {
+                            const { ctx: canvasContext, chartArea } = ctx.chart;
+                            if (!chartArea) return 'rgba(108, 162, 255, 0.1)';
+                            const gradient = canvasContext.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, 'rgba(76, 139, 245, 0.05)');
+                            gradient.addColorStop(1, 'rgba(108, 162, 255, 0.35)');
+                            return gradient;
+                        },
+                        pointRadius: 0,
+                        borderWidth: 2.4,
+                        fill: 'start',
                     }]
                 },
                 options: {
@@ -486,6 +502,7 @@
                                     const colorLabel = delta >= 0 ? 'Above' : 'Below';
                                     return [` Net Contribution: $${contribution.toLocaleString()}`, ` ${colorLabel} by: ${indicator} $${Math.abs(delta).toLocaleString()}`];
                                 }
+                                label: (context) => ` ${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
                             }
                         }
                     }
@@ -500,6 +517,10 @@
                     const { labels, values, contributions, benchmarks } = generateSampleData(range);
                     chartInstance.data.labels = labels;
                     updateDatasets(values, contributions, benchmarks);
+                    const { labels, values } = generateSampleData(range);
+                    chartInstance.data.labels = labels;
+                    chartInstance.data.datasets[0].data = values;
+
                     chartInstance.update();
                 });
             });
@@ -546,6 +567,12 @@
                 nasdaqDataset.data = benchmarks.nasdaq;
             }
 
+                const { labels, values } = generateSampleData('CUSTOM', start, end);
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = values;
+                chartInstance.update();
+            });
+
             function generateSampleData(range = '1M', startDate, endDate) {
                 const today = new Date();
                 let start;
@@ -588,6 +615,9 @@
                 let contributionTotal = 93000;
                 let spIndex = 100;
                 let nasdaqIndex = 100;
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const totalDays = Math.max(1, Math.round((end - start) / msPerDay));
+                let value = 120000;
 
                 for (let i = 0; i <= totalDays; i++) {
                     const current = new Date(start);
@@ -616,6 +646,13 @@
                         nasdaq
                     }
                 };
+                    const drift = Math.sin(i / 6) * 650;
+                    const noise = (Math.random() - 0.5) * 450;
+                    value = Math.max(80000, value + drift * 0.1 + noise * 0.15);
+                    values.push(Number(value.toFixed(2)));
+                }
+
+                return { labels, values };
             }
         });
     </script>
