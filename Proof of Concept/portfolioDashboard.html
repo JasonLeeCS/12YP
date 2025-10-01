@@ -183,6 +183,39 @@
             outline: none;
         }
 
+
+        .comparison-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .comparison-controls label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(20, 27, 41, 0.65);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .comparison-controls input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 16px;
+            height: 16px;
+        }
+
+        .comparison-controls label:hover,
+        .comparison-controls label:focus-within {
+            border-color: rgba(76, 139, 245, 0.45);
+            background: rgba(20, 27, 41, 0.85);
+        }
         .custom-range {
             display: inline-flex;
             align-items: center;
@@ -243,6 +276,10 @@
             .custom-range {
                 width: 100%;
                 flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .comparison-controls {
                 justify-content: center;
             }
         }
@@ -311,6 +348,16 @@
                     </div>
                 </div>
             </div>
+            <div class="comparison-controls" role="group" aria-label="Benchmark comparison toggles">
+                <label>
+                    <input type="checkbox" value="sp500" aria-label="Toggle S&amp;P 500">
+                    <span>S&amp;P 500</span>
+                </label>
+                <label>
+                    <input type="checkbox" value="nasdaq" aria-label="Toggle Nasdaq">
+                    <span>Nasdaq</span>
+                </label>
+            </div>
             <canvas id="valueChart" aria-label="Account value chart" role="img"></canvas>
         </section>
     </main>
@@ -338,6 +385,57 @@
                 data: {
                     labels: chartData.labels,
                     datasets: [{
+                        id: 'accountValue',
+                        label: 'Account Value',
+                        data: chartData.values,
+                        fill: {
+                            target: (context) => {
+                                const chart = context.chart;
+                                const netIndex = chart.data.datasets.findIndex(ds => ds.id === 'netContribution');
+                                return netIndex === -1 ? 'origin' : netIndex;
+                            },
+                            above: 'rgba(79, 209, 167, 0.26)',
+                            below: 'rgba(255, 107, 107, 0.22)'
+                        },
+                        tension: 0.35,
+                        borderColor: 'rgba(108, 162, 255, 1)',
+                        backgroundColor: 'rgba(108, 162, 255, 0.18)',
+                        pointRadius: 0,
+                        borderWidth: 2.4,
+                        order: 2
+                    }, {
+                        id: 'netContribution',
+                        label: 'Net Contribution',
+                        data: chartData.contributions,
+                        tension: 0.3,
+                        borderColor: 'rgba(255, 255, 255, 0.85)',
+                        borderDash: [6, 6],
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        order: 1
+                    }, {
+                        id: 'sp500',
+                        label: 'S&P 500 (Indexed)',
+                        data: chartData.benchmarks.sp500,
+                        tension: 0.32,
+                        borderColor: '#f5c542',
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        hidden: true,
+                        order: 3
+                    }, {
+                        id: 'nasdaq',
+                        label: 'Nasdaq (Indexed)',
+                        data: chartData.benchmarks.nasdaq,
+                        tension: 0.32,
+                        borderColor: '#bb86fc',
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        hidden: true,
+                        order: 3
                         label: 'Account Value',
                         data: chartData.values,
                         fill: true,
@@ -391,6 +489,19 @@
                             borderColor: 'rgba(76, 139, 245, 0.4)',
                             borderWidth: 1,
                             callbacks: {
+                                label: (context) => ` ${context.dataset.label}: $${context.parsed.y.toLocaleString()}`,
+                                afterBody: (context) => {
+                                    if (!context.length) return '';
+                                    const point = context[0];
+                                    if (point.dataset.id !== 'accountValue') return '';
+                                    const chart = point.chart;
+                                    const contributionDataset = chart.data.datasets.find(ds => ds.id === 'netContribution');
+                                    const contribution = contributionDataset.data[point.dataIndex];
+                                    const delta = point.parsed.y - contribution;
+                                    const indicator = delta >= 0 ? '▲' : '▼';
+                                    const colorLabel = delta >= 0 ? 'Above' : 'Below';
+                                    return [` Net Contribution: $${contribution.toLocaleString()}`, ` ${colorLabel} by: ${indicator} $${Math.abs(delta).toLocaleString()}`];
+                                }
                                 label: (context) => ` ${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
                             }
                         }
@@ -403,9 +514,13 @@
                 button.addEventListener('click', () => {
                     filterButtons.forEach(btn => btn.classList.toggle('active', btn === button));
                     const range = button.dataset.range;
+                    const { labels, values, contributions, benchmarks } = generateSampleData(range);
+                    chartInstance.data.labels = labels;
+                    updateDatasets(values, contributions, benchmarks);
                     const { labels, values } = generateSampleData(range);
                     chartInstance.data.labels = labels;
                     chartInstance.data.datasets[0].data = values;
+
                     chartInstance.update();
                 });
             });
@@ -426,6 +541,32 @@
                 }
 
                 filterButtons.forEach(btn => btn.classList.remove('active'));
+                const { labels, values, contributions, benchmarks } = generateSampleData('CUSTOM', start, end);
+                chartInstance.data.labels = labels;
+                updateDatasets(values, contributions, benchmarks);
+                chartInstance.update();
+            });
+
+            document.querySelectorAll('.comparison-controls input[type="checkbox"]').forEach(toggle => {
+                toggle.addEventListener('change', (event) => {
+                    const dataset = chartInstance.data.datasets.find(ds => ds.id === event.target.value);
+                    if (!dataset) return;
+                    dataset.hidden = !event.target.checked;
+                    chartInstance.update();
+                });
+            });
+
+            function updateDatasets(values, contributions, benchmarks) {
+                const accountDataset = chartInstance.data.datasets.find(ds => ds.id === 'accountValue');
+                const contributionDataset = chartInstance.data.datasets.find(ds => ds.id === 'netContribution');
+                const spDataset = chartInstance.data.datasets.find(ds => ds.id === 'sp500');
+                const nasdaqDataset = chartInstance.data.datasets.find(ds => ds.id === 'nasdaq');
+                accountDataset.data = values;
+                contributionDataset.data = contributions;
+                spDataset.data = benchmarks.sp500;
+                nasdaqDataset.data = benchmarks.nasdaq;
+            }
+
                 const { labels, values } = generateSampleData('CUSTOM', start, end);
                 chartInstance.data.labels = labels;
                 chartInstance.data.datasets[0].data = values;
@@ -465,6 +606,15 @@
 
                 const labels = [];
                 const values = [];
+                const contributions = [];
+                const sp500 = [];
+                const nasdaq = [];
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const totalDays = Math.max(1, Math.round((end - start) / msPerDay));
+                let value = 120000;
+                let contributionTotal = 93000;
+                let spIndex = 100;
+                let nasdaqIndex = 100;
                 const msPerDay = 1000 * 60 * 60 * 24;
                 const totalDays = Math.max(1, Math.round((end - start) / msPerDay));
                 let value = 120000;
@@ -473,6 +623,29 @@
                     const current = new Date(start);
                     current.setDate(start.getDate() + i);
                     labels.push(current.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    const drift = Math.sin(i / 8) * 520;
+                    const noise = (Math.random() - 0.5) * 420;
+                    value = Math.max(82000, value + drift * 0.1 + noise * 0.12);
+                    values.push(Number(value.toFixed(2)));
+
+                    contributionTotal += 65 + (i % 5 === 0 ? 240 : 0);
+                    contributions.push(Number(contributionTotal.toFixed(2)));
+
+                    spIndex *= 1 + Math.sin(i / 14) * 0.003 + (Math.random() - 0.5) * 0.0025;
+                    nasdaqIndex *= 1 + Math.sin(i / 10) * 0.004 + (Math.random() - 0.5) * 0.0032;
+                    sp500.push(Number(((spIndex / 100) * 110000).toFixed(2)));
+                    nasdaq.push(Number(((nasdaqIndex / 100) * 112000).toFixed(2)));
+                }
+
+                return {
+                    labels,
+                    values,
+                    contributions,
+                    benchmarks: {
+                        sp500,
+                        nasdaq
+                    }
+                };
                     const drift = Math.sin(i / 6) * 650;
                     const noise = (Math.random() - 0.5) * 450;
                     value = Math.max(80000, value + drift * 0.1 + noise * 0.15);
