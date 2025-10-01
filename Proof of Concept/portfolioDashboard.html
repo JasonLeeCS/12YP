@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schwab Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --background: #0c0f17;
+            --surface: #141b29;
+            --surface-muted: #1c2435;
+            --surface-glass: rgba(22, 30, 44, 0.85);
+            --accent: #4c8bf5;
+            --accent-strong: #6da2ff;
+            --text-primary: #f4f7ff;
+            --text-secondary: #a9b5d1;
+            --border: rgba(255, 255, 255, 0.08);
+            --positive: #4fd1a7;
+            --negative: #ff6b6b;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, rgba(76, 139, 245, 0.22), transparent 55%),
+                        radial-gradient(circle at bottom, rgba(79, 209, 167, 0.08), transparent 40%),
+                        var(--background);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 32px clamp(16px, 5vw, 64px) 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 2.6vw, 2.6rem);
+            letter-spacing: 0.03em;
+        }
+
+        header p {
+            margin: 4px 0 0;
+            color: var(--text-secondary);
+            font-size: 0.98rem;
+            max-width: 480px;
+            line-height: 1.6;
+        }
+
+        main {
+            flex: 1;
+            padding: 0 clamp(16px, 5vw, 64px) 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .summary-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .metric-card {
+            background: linear-gradient(150deg, rgba(30, 39, 56, 0.92), rgba(12, 15, 23, 0.95));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px 24px;
+            backdrop-filter: blur(18px);
+            box-shadow:
+                0 16px 38px rgba(9, 12, 20, 0.6),
+                0 0 0 1px rgba(76, 139, 245, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        .metric-value {
+            font-size: 1.7rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .metric-delta {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .metric-delta.positive {
+            color: var(--positive);
+        }
+
+        .metric-delta.negative {
+            color: var(--negative);
+        }
+
+        .chart-card {
+            background: var(--surface-glass);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            box-shadow:
+                0 18px 45px rgba(8, 12, 22, 0.7),
+                0 0 0 1px rgba(76, 139, 245, 0.04);
+            display: grid;
+            gap: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .chart-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            letter-spacing: 0.03em;
+        }
+
+        .text-muted {
+            margin: 6px 0 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.92rem;
+            letter-spacing: 0.015em;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filters button {
+            background: rgba(76, 139, 245, 0.16);
+            border: 1px solid transparent;
+            color: var(--accent-strong);
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .filters button.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            border-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            box-shadow: 0 10px 25px rgba(76, 139, 245, 0.35);
+        }
+
+        .filters button:hover,
+        .filters button:focus {
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .comparison-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .comparison-controls label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(20, 27, 41, 0.65);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .comparison-controls input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 16px;
+            height: 16px;
+        }
+
+        .comparison-controls label:hover,
+        .comparison-controls label:focus-within {
+            border-color: rgba(76, 139, 245, 0.45);
+            background: rgba(20, 27, 41, 0.85);
+        }
+
+        .custom-range {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 999px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            background: rgba(19, 25, 38, 0.75);
+        }
+
+        .custom-range label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .custom-range input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .custom-range input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        .custom-range button {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: rgba(76, 139, 245, 0.28);
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .custom-range button:hover,
+        .custom-range button:focus {
+            background: rgba(76, 139, 245, 0.45);
+            outline: none;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 360px !important;
+        }
+
+        @media (max-width: 768px) {
+            .chart-card {
+                padding: 22px;
+            }
+
+            canvas {
+                height: 300px !important;
+            }
+
+            .custom-range {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .comparison-controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Portfolio Overview</h1>
+            <p>Track your Schwab portfolio's performance, total balances, and investment gains in real time with a clear, focused dashboard.</p>
+        </div>
+        <div class="timestamp" aria-live="polite"></div>
+    </header>
+
+    <main>
+        <section class="summary-grid" aria-label="Portfolio summary">
+            <article class="metric-card">
+                <span class="metric-label">Total Account Value</span>
+                <span class="metric-value" id="totalAccountValue">$148,520.32</span>
+                <span class="metric-delta positive" id="totalAccountValueDelta">▲ $1,842.12 (1.26%)</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Total Cash &amp; Cash Invest</span>
+                <span class="metric-value" id="totalCash">$28,430.00</span>
+                <span class="metric-delta" id="totalCashDelta">$0.00</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Total Market Value</span>
+                <span class="metric-value" id="totalMarketValue">$120,090.32</span>
+                <span class="metric-delta positive" id="totalMarketValueDelta">▲ $1,210.54 (1.02%)</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Total Day Change</span>
+                <span class="metric-value positive" id="totalDayChange">+$546.20</span>
+                <span class="metric-delta positive" id="totalDayChangePercent">+0.37%</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Total Cost Basis</span>
+                <span class="metric-value" id="totalCostBasis">$96,780.14</span>
+                <span class="metric-delta" id="totalCostBasisNote">Across 28 positions</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Total Gain / Loss</span>
+                <span class="metric-value positive" id="totalGainLoss">+$23,310.18</span>
+                <span class="metric-delta positive" id="totalGainLossPercent">+24.1%</span>
+            </article>
+        </section>
+
+        <section class="chart-card" aria-label="Account value chart">
+            <div class="chart-header">
+                <div>
+                    <h2>Account Value</h2>
+                    <p class="text-muted">Historical portfolio performance</p>
+                </div>
+                <div class="filters" role="group" aria-label="Time range filters">
+                    <button type="button" data-range="1M" class="active">1M</button>
+                    <button type="button" data-range="3M">3M</button>
+                    <button type="button" data-range="6M">6M</button>
+                    <button type="button" data-range="YTD">YTD</button>
+                    <div class="custom-range">
+                        <label for="startDate">Custom</label>
+                        <input type="date" id="startDate" aria-label="Start date">
+                        <span aria-hidden="true">–</span>
+                        <input type="date" id="endDate" aria-label="End date">
+                        <button type="button" id="applyCustom">Apply</button>
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-controls" role="group" aria-label="Benchmark comparison toggles">
+                <label>
+                    <input type="checkbox" value="sp500" aria-label="Toggle S&amp;P 500">
+                    <span>S&amp;P 500</span>
+                </label>
+                <label>
+                    <input type="checkbox" value="nasdaq" aria-label="Toggle Nasdaq">
+                    <span>Nasdaq</span>
+                </label>
+            </div>
+            <canvas id="valueChart" aria-label="Account value chart" role="img"></canvas>
+        </section>
+    </main>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const timestampEl = document.querySelector('.timestamp');
+            const updateTimestamp = () => {
+                const now = new Date();
+                const formatted = now.toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                });
+                timestampEl.textContent = `Last updated ${formatted}`;
+            };
+            updateTimestamp();
+
+            const ctx = document.getElementById('valueChart');
+            const chartData = generateSampleData();
+            const chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        id: 'accountValue',
+                        label: 'Account Value',
+                        data: chartData.values,
+                        fill: {
+                            target: (context) => {
+                                const chart = context.chart;
+                                const netIndex = chart.data.datasets.findIndex(ds => ds.id === 'netContribution');
+                                return netIndex === -1 ? 'origin' : netIndex;
+                            },
+                            above: 'rgba(79, 209, 167, 0.26)',
+                            below: 'rgba(255, 107, 107, 0.22)'
+                        },
+                        tension: 0.35,
+                        borderColor: 'rgba(108, 162, 255, 1)',
+                        backgroundColor: 'rgba(108, 162, 255, 0.18)',
+                        pointRadius: 0,
+                        borderWidth: 2.4,
+                        order: 2
+                    }, {
+                        id: 'netContribution',
+                        label: 'Net Contribution',
+                        data: chartData.contributions,
+                        tension: 0.3,
+                        borderColor: 'rgba(255, 255, 255, 0.85)',
+                        borderDash: [6, 6],
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        order: 1
+                    }, {
+                        id: 'sp500',
+                        label: 'S&P 500 (Indexed)',
+                        data: chartData.benchmarks.sp500,
+                        tension: 0.32,
+                        borderColor: '#f5c542',
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        hidden: true,
+                        order: 3
+                    }, {
+                        id: 'nasdaq',
+                        label: 'Nasdaq (Indexed)',
+                        data: chartData.benchmarks.nasdaq,
+                        tension: 0.32,
+                        borderColor: '#bb86fc',
+                        pointRadius: 0,
+                        borderWidth: 1.6,
+                        fill: false,
+                        hidden: true,
+                        order: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.04)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.55)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.55)',
+                                callback: (value) => `$${value.toLocaleString()}`
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.65)'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(12, 18, 29, 0.92)',
+                            titleColor: '#f4f7ff',
+                            bodyColor: '#cfd9f4',
+                            borderColor: 'rgba(76, 139, 245, 0.4)',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: (context) => ` ${context.dataset.label}: $${context.parsed.y.toLocaleString()}`,
+                                afterBody: (context) => {
+                                    if (!context.length) return '';
+                                    const point = context[0];
+                                    if (point.dataset.id !== 'accountValue') return '';
+                                    const chart = point.chart;
+                                    const contributionDataset = chart.data.datasets.find(ds => ds.id === 'netContribution');
+                                    const contribution = contributionDataset.data[point.dataIndex];
+                                    const delta = point.parsed.y - contribution;
+                                    const indicator = delta >= 0 ? '▲' : '▼';
+                                    const colorLabel = delta >= 0 ? 'Above' : 'Below';
+                                    return [` Net Contribution: $${contribution.toLocaleString()}`, ` ${colorLabel} by: ${indicator} $${Math.abs(delta).toLocaleString()}`];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const filterButtons = document.querySelectorAll('.filters button[data-range]');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+                    const range = button.dataset.range;
+                    const { labels, values, contributions, benchmarks } = generateSampleData(range);
+                    chartInstance.data.labels = labels;
+                    updateDatasets(values, contributions, benchmarks);
+                    chartInstance.update();
+                });
+            });
+
+            document.getElementById('applyCustom').addEventListener('click', () => {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                if (!startDate || !endDate) {
+                    alert('Select both start and end dates to apply a custom range.');
+                    return;
+                }
+
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                if (start > end) {
+                    alert('Start date must be before the end date.');
+                    return;
+                }
+
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                const { labels, values, contributions, benchmarks } = generateSampleData('CUSTOM', start, end);
+                chartInstance.data.labels = labels;
+                updateDatasets(values, contributions, benchmarks);
+                chartInstance.update();
+            });
+
+            document.querySelectorAll('.comparison-controls input[type="checkbox"]').forEach(toggle => {
+                toggle.addEventListener('change', (event) => {
+                    const dataset = chartInstance.data.datasets.find(ds => ds.id === event.target.value);
+                    if (!dataset) return;
+                    dataset.hidden = !event.target.checked;
+                    chartInstance.update();
+                });
+            });
+
+            function updateDatasets(values, contributions, benchmarks) {
+                const accountDataset = chartInstance.data.datasets.find(ds => ds.id === 'accountValue');
+                const contributionDataset = chartInstance.data.datasets.find(ds => ds.id === 'netContribution');
+                const spDataset = chartInstance.data.datasets.find(ds => ds.id === 'sp500');
+                const nasdaqDataset = chartInstance.data.datasets.find(ds => ds.id === 'nasdaq');
+                accountDataset.data = values;
+                contributionDataset.data = contributions;
+                spDataset.data = benchmarks.sp500;
+                nasdaqDataset.data = benchmarks.nasdaq;
+            }
+
+            function generateSampleData(range = '1M', startDate, endDate) {
+                const today = new Date();
+                let start;
+                switch (range) {
+                    case '1M':
+                        start = new Date(today);
+                        start.setMonth(start.getMonth() - 1);
+                        break;
+                    case '3M':
+                        start = new Date(today);
+                        start.setMonth(start.getMonth() - 3);
+                        break;
+                    case '6M':
+                        start = new Date(today);
+                        start.setMonth(start.getMonth() - 6);
+                        break;
+                    case 'YTD':
+                        start = new Date(today.getFullYear(), 0, 1);
+                        break;
+                    case 'CUSTOM':
+                        start = startDate || new Date(today);
+                        break;
+                    default:
+                        start = new Date(today);
+                }
+
+                const end = range === 'CUSTOM' ? (endDate || today) : today;
+                if (end < start) {
+                    return { labels: [], values: [] };
+                }
+
+                const labels = [];
+                const values = [];
+                const contributions = [];
+                const sp500 = [];
+                const nasdaq = [];
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const totalDays = Math.max(1, Math.round((end - start) / msPerDay));
+                let value = 120000;
+                let contributionTotal = 93000;
+                let spIndex = 100;
+                let nasdaqIndex = 100;
+
+                for (let i = 0; i <= totalDays; i++) {
+                    const current = new Date(start);
+                    current.setDate(start.getDate() + i);
+                    labels.push(current.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    const drift = Math.sin(i / 8) * 520;
+                    const noise = (Math.random() - 0.5) * 420;
+                    value = Math.max(82000, value + drift * 0.1 + noise * 0.12);
+                    values.push(Number(value.toFixed(2)));
+
+                    contributionTotal += 65 + (i % 5 === 0 ? 240 : 0);
+                    contributions.push(Number(contributionTotal.toFixed(2)));
+
+                    spIndex *= 1 + Math.sin(i / 14) * 0.003 + (Math.random() - 0.5) * 0.0025;
+                    nasdaqIndex *= 1 + Math.sin(i / 10) * 0.004 + (Math.random() - 0.5) * 0.0032;
+                    sp500.push(Number(((spIndex / 100) * 110000).toFixed(2)));
+                    nasdaq.push(Number(((nasdaqIndex / 100) * 112000).toFixed(2)));
+                }
+
+                return {
+                    labels,
+                    values,
+                    contributions,
+                    benchmarks: {
+                        sp500,
+                        nasdaq
+                    }
+                };
+            }
+        });
+    </script>
+</body>
+</html>
